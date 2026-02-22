@@ -5,100 +5,100 @@ description: Query A-share and US stock data via Tencent Finance API. Use when u
 
 # China Stock Data
 
-获取A股和美股实时行情数据。
+Query A-share and US stock real-time market data.
 
-## A股数据查询
+## A-Share Data Query
 
-### 基础URL
+### Base URL
 ```
 http://qt.gtimg.cn/q=<stock_code>
 ```
 
-### 股票代码规则
+### Stock Code Rules
 
-| 市场 | 代码前缀 | 示例 |
-|------|----------|------|
-| 上海主板 | sh600xxx | sh600560（五洲新春） |
-| 上海科创板 | sh688xxx | sh688xxx |
-| 深圳主板 | sz000xxx | sz000001（平安银行） |
-| 深圳创业板 | sz300xxx | sz300xxx |
-| 深圳ETF | sz159xxx | sz159326（电网设备ETF） |
+| Market | Code Prefix | Example |
+|--------|-------------|---------|
+| Shanghai Main Board | sh600xxx | sh600560 |
+| Shanghai STAR Market | sh688xxx | sh688xxx |
+| Shenzhen Main Board | sz000xxx | sz000001 (Ping An Bank) |
+| Shenzhen ChiNext | sz300xxx | sz300xxx |
+| Shenzhen ETF | sz159xxx | sz159326 |
 
-### 指数代码
+### Index Codes
 
-| 指数 | 代码 |
-|------|------|
-| 上证指数 | sh000001 |
-| 深证成指 | sz399001 |
-| 创业板指 | sz399006 |
-| 科创50 | sz399987 |
-| 沪深300 | sh000300 |
+| Index | Code |
+|-------|------|
+| Shanghai Composite | sh000001 |
+| Shenzhen Component | sz399001 |
+| ChiNext Index | sz399006 |
+| STAR 50 | sz399987 |
+| CSI 300 | sh000300 |
 
-### 查询示例
+### Query Examples
 
-**单只股票：**
+**Single Stock:**
 ```
 http://qt.gtimg.cn/q=sh600089
 ```
 
-**多只股票（逗号分隔）：**
+**Multiple Stocks (comma separated):**
 ```
 http://qt.gtimg.cn/q=sh600089,sh600560,sz399001
 ```
 
-### 返回数据格式
+### Return Data Format
 
-返回数据为类JSON格式，字段以`~`分隔：
+Returns quasi-JSON format with fields separated by `~`:
 
 ```
-v_sh600089="1~特变电工~600089~28.75~28.92~28.63~1999256~...~-0.17~-0.59~..."
+v_sh600089="1~TEB~600089~28.75~28.92~28.63~1999256~...~-0.17~-0.59~..."
 ```
 
-**关键字段索引：**
+**Key Field Indices:**
 
-| 索引 | 含义 |
-|------|------|
-| 0 | 市场代码 |
-| 1 | 股票名称 |
-| 2 | 股票代码 |
-| 3 | 当前价格 |
-| 4 | 开盘价 |
-| 5 | 最低价 |
-| 6 | 最高价 |
-| 30 | 涨跌额 |
-| 31 | 涨跌幅(%) |
-| 32 | 最高价 |
-| 33 | 最低价 |
+| Index | Meaning |
+|-------|---------|
+| 0 | Market Code |
+| 1 | Stock Name |
+| 2 | Stock Code |
+| 3 | Current Price |
+| 4 | Open Price |
+| 5 | Low Price |
+| 6 | High Price |
+| 30 | Change Amount |
+| 31 | Change % |
+| 32 | High Price |
+| 33 | Low Price |
 
-**注意**：API返回数据中已包含涨跌幅字段（索引31），优先使用该字段而非自行计算。
+**Note**: The API returns change % field (index 31). Use this field instead of calculating it yourself.
 
-## 美股数据查询
+## US Stock Data Query
 
-腾讯财经API对美股支持有限，建议使用以下替代方案：
+Tencent Finance API has limited US stock support. Use these alternatives:
 
-### 方案1：Yahoo Finance (推荐)
+### Option 1: Yahoo Finance (Recommended)
 
 ```bash
 curl -s "https://query1.finance.yahoo.com/v8/finance/chart/AAPL"
 ```
 
-### 方案2：Alpha Vantage (需要API Key)
+### Option 2: Alpha Vantage (Needs API Key)
 
 ```bash
 curl -s "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=AAPL&apikey=YOUR_KEY"
 ```
 
-### 常用美股指数代码
+### Common US Index Codes
 
-| 指数 | Yahoo代码 |
-|------|-----------|
-| 道琼斯 | ^DJI |
-| 纳斯达克 | ^IXIC |
-| 标普500 | ^GSPC |
+| Index | Yahoo Code |
+|-------|------------|
+| Dow Jones | ^DJI |
+| Nasdaq | ^IXIC |
+| S&P 500 | ^GSPC |
 
-## 数据解析示例
+## Data Parsing Examples
 
-### Python解析腾讯财经数据
+### Python - Parse Tencent Finance Data
 
 ```python
 import re
@@ -109,7 +109,7 @@ def get_stock_data(code):
     with urllib.request.urlopen(url) as response:
         data = response.read().decode('gbk')
     
-    # 提取数据
+    # Extract data
     match = re.search(r'="([^"]+)"', data)
     if not match:
         return None
@@ -127,23 +127,23 @@ def get_stock_data(code):
         'change_pct': float(fields[31]),
     }
 
-# 使用示例
+# Usage
 data = get_stock_data('sh600089')
 print(f"{data['name']}: {data['price']} ({data['change_pct']}%)")
 ```
 
-### 使用web_fetch工具
+### Using web_fetch Tool
 
 ```python
-# 获取多只股票数据
+# Get multiple stock data
 url = "http://qt.gtimg.cn/q=sh000001,sh600089,sz399001"
-# 使用web_fetch获取数据，然后解析
+# Use web_fetch to get data, then parse
 ```
 
-## 注意事项
+## Notes
 
-1. **编码问题**：腾讯财经返回GBK编码，需正确解码
-2. **涨跌幅**：优先使用API返回的字段（索引31），避免自行计算误差
-3. **数据延迟**：实时数据可能有15分钟延迟
-4. **请求频率**：避免高频请求，建议批量查询
-5. **错误处理**：无效代码返回`v_pv_none_match="1"`，需检查返回内容
+1. **Encoding**: Tencent Finance returns GBK encoding, decode properly
+2. **Change %**: Use API-returned field (index 31), avoid calculating manually
+3. **Data Delay**: Real-time data may have 15-minute delay
+4. **Request Frequency**: Avoid high-frequency requests, use batch queries
+5. **Error Handling**: Invalid codes return `v_pv_none_match="1"`, check response content
