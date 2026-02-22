@@ -24,9 +24,14 @@ client = FeishuClient(user_access_token="u-xxx")
 
 ## 获取用户访问令牌
 
-### Step 1: 在飞书开放平台启用权限
+### Step 1: 在飞书开放平台获取应用凭证
 
-需要以下权限：
+需要准备以下信息：
+- **APP_ID** - 应用 ID（在飞书开放平台的应用设置中获取）
+- **APP_SECRET** - 应用密钥（在飞书开放平台的应用设置中获取）
+- **REDIRECT_URI** - 授权回调地址
+
+同时启用以下权限：
 - `docx:document` - 文档操作
 - `drive:drive.search:readonly` - 云盘搜索
 - `search:docs:read` - 文档搜索
