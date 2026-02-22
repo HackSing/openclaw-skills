@@ -1,5 +1,5 @@
 ---
-name: china-stock-data
+name: allstock-data
 description: Query A-share and US stock data via Tencent Finance API. Use when user needs real-time or historical stock quotes, indices, ETF prices, or market data for Chinese or US markets.
 ---
 

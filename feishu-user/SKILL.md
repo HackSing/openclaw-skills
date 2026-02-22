@@ -1,9 +1,9 @@
 ---
-name: claw-feishu-user
+name: feishu-user
 description: 飞书文档操作（用户访问令牌版）。使用用户访问令牌认证的飞书文档操作技能。不依赖插件，直接通过 REST API 操作飞书文档。当需要读取、创建、写入、追加飞书文档时使用。
 ---
 
-# Claw Feishu User
+# Feishu User
 
 使用用户访问令牌认证的飞书文档操作技能。不依赖插件，直接通过 REST API 调用飞书开放平台。
 

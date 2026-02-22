@@ -13,21 +13,40 @@ description: 从源码更新 OpenClaw。包括拉取最新 main 分支、rebase 
 # 1. 进入项目目录
 cd /home/ubuntu/projects/openclaw
 
-# 2. 添加官方仓库（如果还没加）
+# 2. 备份配置文件（更新前的好习惯！）
+echo "=== 备份配置文件 ==="
+mkdir -p ~/.openclaw/backups
+BACKUP_SUFFIX=$(date +%Y%m%d-%H%M%S)
+
+# 备份主要配置
+cp ~/.openclaw/openclaw.json ~/.openclaw/backups/openclaw.json.bak.$BACKUP_SUFFIX
+echo "✅ 已备份: openclaw.json"
+
+# 备份 auth profiles（如果存在）
+if [ -f ~/.openclaw/agents/main/agent/auth-profiles.json ]; then
+  cp ~/.openclaw/agents/main/agent/auth-profiles.json \
+     ~/.openclaw/backups/auth-profiles.json.bak.$BACKUP_SUFFIX
+  echo "✅ 已备份: auth-profiles.json"
+fi
+
+echo "💡 备份已保存到: ~/.openclaw/backups/"
+echo ""
+
+# 3. 添加官方仓库（如果还没加）
 git remote add upstream https://github.com/openclaw/openclaw.git 2>/dev/null || true
 
-# 3. 获取官方更新
+# 4. 获取官方更新
 git fetch upstream
 
-# 4. 更新 main 分支
+# 5. 更新 main 分支
 git checkout main
 git merge upstream/main
 
-# 5. 查看完整更新内容（友好总结）
+# 6. 查看完整更新内容（友好总结）
 echo "=== 完整更新内容 ==="
 # 获取当前和上一个版本的 tag
-CURRENT_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v$(node -e 'console.log(require("./package.json").version)')
-PREV_TAG=$(git tag --sort=-creatordate | grep -A1 "^$CURRENT_TAG$" | tail -n1
+CURRENT_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v$(node -e 'console.log(require("./package.json").version)')")
+PREV_TAG=$(git tag --sort=-creatordate | grep -A1 "^$CURRENT_TAG$" | tail -n1)
 if [ "$PREV_TAG" = "$CURRENT_TAG" ]; then
   PREV_TAG=$(git tag --sort=-creatordate | grep -A2 "^$CURRENT_TAG$" | tail -n1)
 fi
@@ -53,19 +72,46 @@ if [ -f CHANGELOG.md ]; then
   echo "$CHANGELOG_CONTENT" | awk '/^## /{p=0} /^### Changes/{p=1} p' | head -100 | sed 's/^- /*/'
 fi
 
-# 6. 切回功能分支并 rebase
-git checkout feat/add-token-usage-to-agent-end-hook
+# 7. 切回功能分支并 rebase
+git checkout feat/allowed-agents-v2
 git rebase main
 
-# 7. 构建并安装
+# 8. 构建并安装
 npm run build
 npm i -g .
 
-# 8. 检查版本
-openclaw --version
+# 9. 检查版本
+NEW_VERSION=$(openclaw --version)
+echo "✅ 更新完成！新版本: $NEW_VERSION"
+echo ""
 
-# 9. 重启 gateway（可选）
+# 10. 验证配置是否正确迁移
+echo "=== 验证配置迁移 ==="
+echo "检查 model fallback chain..."
+cat ~/.openclaw/openclaw.json | grep -A 10 '"model"' || echo "⚠️  未找到 model 配置（可能正常）"
+echo ""
+
+# 11. 重启 gateway
+echo "=== 重启 Gateway ==="
 systemctl --user restart openclaw-gateway
+
+# 12. 确认 Gateway 健康
+echo "=== 检查 Gateway 健康状态 ==="
+sleep 3  # 等待 Gateway 启动
+if command -v openclaw &>/dev/null; then
+  openclaw health 2>/dev/null || openclaw status
+else
+  echo "⚠️  openclaw 命令不可用，请手动检查 Gateway 状态"
+fi
+echo ""
+
+# 13. 完成提示
+echo "=== 更新完成！ ==="
+echo ""
+echo "✅ Workspace、memory、auth profiles 都会自动保留"
+echo "✅ 备份只是预防措施 —— 30 秒现在 vs. 重建后来"
+echo "💡 如果更新后有问题，可以从 ~/.openclaw/backups/ 恢复"
+echo ""
 ```
 
 ## 快捷脚本

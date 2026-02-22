@@ -23,19 +23,16 @@ description: 备份 OpenClaw 状态目录和工作区。包括排除日志、会
 
 ## GitHub 备份流程
 
-1. 在 GitHub 创建私人仓库（如 `openclaw-backup`）
-2. 克隆到本地 Mac：
-   ```bash
-   git clone https://github.com/<你的用户名>/openclaw-backup.git
-   ```
-3. 每次备份后解压提交：
-   ```bash
-   cd openclaw-backup
-   tar -xzf /tmp/openclaw-backup-20260216.tar.gz
-   git add .
-   git commit -m "Backup 2026-02-16"
-   git push
-   ```
+1. **初始化**（只需一次）：
+   - 在 GitHub 创建私人仓库（如 `openclaw-backup`）
+   - 克隆到本地：`git clone https://github.com/<你的用户名>/openclaw-backup.git`
+
+2. **每次备份**：
+   - 运行备份脚本，生成 `tar.gz` 文件（如 `/tmp/openclaw-backup-20260222.tar.gz`）
+   - 解压覆盖到克隆目录：`tar -xzf /tmp/openclaw-backup-20260222.tar.gz -C /path/to/openclaw-backup`
+   - 提交并推送：`cd /path/to/openclaw-backup && git add . && git commit -m "Backup 2026-02-22" && git push origin main`
+
+**注意**：解压会覆盖旧文件，git 提交后 GitHub 上保存的就是最新备份。
 
 ## 恢复流程
 
