@@ -45,8 +45,8 @@ mkdir -p "$BACKUP_DIR"
 # 2. Copy state directory (exclude sensitive files)
 echo "[2/4] Copying state directory..."
 
-# Build rsync exclude args asYNC_ARGS array
-RS=("-a" "--delete")
+# Build rsync args array
+RSYNC_ARGS=("-a" "--delete")
 for pattern in "${EXCLUDE_PATTERNS[@]}"; do
     RSYNC_ARGS+=("--exclude=$pattern")
 done
