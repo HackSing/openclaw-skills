@@ -5,7 +5,8 @@
 set -e
 
 # Configuration - customize these for your environment
-BACKUP_DIR="/tmp/safe-backup-$(date +%Y%m%d-%H%M%S)"
+TS=$(date +%Y%m%d-%H%M%S)
+BACKUP_DIR="/tmp/safe-backup-$TS"
 STATE_DIR="${OPENCLAW_STATE_DIR:-$HOME/.openclaw}"
 WORKSPACE_DIR="${OPENCLAW_WORKSPACE_DIR:-$HOME/.openclaw/workspace}"
 
@@ -43,11 +44,14 @@ mkdir -p "$BACKUP_DIR"
 
 # 2. Copy state directory (exclude sensitive files)
 echo "[2/4] Copying state directory..."
-RSYNC_EXCLUDE=""
+
+# Build rsync exclude args asYNC_ARGS array
+RS=("-a" "--delete")
 for pattern in "${EXCLUDE_PATTERNS[@]}"; do
-    RSYNC_EXCLUDE="$RSYNC_EXCLUDE --exclude='$pattern'"
+    RSYNC_ARGS+=("--exclude=$pattern")
 done
-eval rsync -av $RSYNC_EXCLUDE "$STATE_DIR/" "$BACKUP_DIR/state/"
+
+rsync "${RSYNC_ARGS[@]}" "$STATE_DIR/" "$BACKUP_DIR/state/"
 
 # 3. Copy workspace (if exists)
 echo "[3/4] Copying workspace..."
@@ -60,9 +64,12 @@ fi
 # 4. Package
 echo "[4/4] Packaging backup..."
 cd /tmp
-tar -czf "safe-backup-$(date +%Y%m%d).tar.gz" "safe-backup-$(date +%Y%m%d-%H%M%S)"
+tar -czf "safe-backup-$TS.tar.gz" "safe-backup-$TS"
 
-BACKUP_FILE="safe-backup-$(date +%Y%m%d).tar.gz"
+# Cleanup temp directory
+rm -rf "$BACKUP_DIR"
+
+BACKUP_FILE="safe-backup-$TS.tar.gz"
 
 echo ""
 echo "=== Backup Complete ==="
@@ -77,4 +84,6 @@ echo "Next steps (manual):"
 echo "1. Create a private GitHub repository (recommended)"
 echo "2. git clone repository locally"
 echo "3. Extract: tar -xzf /tmp/$BACKUP_FILE"
-echo "4. Commit and push: cd <backup-dir> && git add . && git commit -m 'Backup $(date +%Y-%m-%d)' && git push"
+echo "4. Commit and push: cd <backup-dir> && git add . && git commit -m 'Backup $TS' && git push"
+echo ""
+echo "⚠️  Remember to delete unencrypted backup from /tmp!"
