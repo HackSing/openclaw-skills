@@ -53,10 +53,11 @@ done
 
 rsync "${RSYNC_ARGS[@]}" "$STATE_DIR/" "$BACKUP_DIR/state/"
 
-# 3. Copy workspace (if exists)
+# 3. Copy workspace (if exists) - use rsync with same exclusions
 echo "[3/4] Copying workspace..."
 if [ -d "$WORKSPACE_DIR" ]; then
-    cp -r "$WORKSPACE_DIR" "$BACKUP_DIR/workspace/"
+    # Use rsync with same exclusion patterns as state directory
+    rsync "${RSYNC_ARGS[@]}" "$WORKSPACE_DIR/" "$BACKUP_DIR/workspace/"
 else
     echo "Warning: Workspace directory not found: $WORKSPACE_DIR"
 fi
