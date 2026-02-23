@@ -1,11 +1,55 @@
 ---
 name: safe-update
-description: Update OpenClaw from source code. Includes pulling latest main branch, rebasing feature branch, building and installing, restarting service. Triggered when user asks to update OpenClaw, sync source, rebase branch, or rebuild.
+description: Update OpenClaw from source code. Supports custom project path and branch. Includes pulling latest branch, rebasing, building and installing, restarting service. Triggered when user asks to update OpenClaw, sync source, rebase branch, or rebuild.
 ---
 
 # Safe Update
 
 Update OpenClaw from source to the latest version while preserving local changes.
+
+## ⚠️ Important Warnings
+
+- This script performs **git rebase** and **git push --force** - may lose local changes if not properly committed
+- Uses **npm i -g .** for global installation - may require sudo
+- Uses **systemctl --user restart** - will restart the OpenClaw service
+- **Backup your config before running!** (see below)
+
+## Requirements
+
+Required binaries (must be installed):
+- `git`
+- `npm` / `node`
+- `systemctl` (for restarting gateway)
+
+## Configuration
+
+### Environment Variables (optional)
+
+```bash
+# Set custom project path
+export OPENCLAW_PROJECT_DIR="/path/to/openclaw"
+
+# Set custom branch (default: main)
+export OPENCLAW_BRANCH="your-feature-branch"
+
+# Enable dry-run mode (no actual changes)
+export DRY_RUN="true"
+```
+
+### Or Pass as Arguments
+
+```bash
+./update.sh --dir /path/to/openclaw --branch your-branch
+```
+
+## Pre-run Checklist
+
+Before running, complete these steps:
+
+- [ ] **Backup config files**: `cp ~/.openclaw/openclaw.json ~/.openclaw/openclaw.json.bak`
+- [ ] **Backup auth profiles** (if exist): `cp ~/.openclaw/agents/main/agent/auth-profiles.json ~/.openclaw/auth-profiles.json.bak`
+- [ ] **Ensure git changes are committed** or stashed
+- [ ] **Check you have internet connection** for git fetch
 
 ## Workflow
 
@@ -38,74 +82,39 @@ git remote add upstream https://github.com/openclaw/openclaw.git 2>/dev/null || 
 # 4. Fetch upstream changes
 git fetch upstream
 
-# 5. Update main branch
-git checkout main
-git merge upstream/main
+# 5. Update target branch
+git checkout $BRANCH
+git merge upstream/$BRANCH
 
-# 6. View full changelog (friendly summary)
+# 6. View changelog
 echo "=== Full Changelog ==="
-# Get current and previous version tags
 CURRENT_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v$(node -e 'console.log(require("./package.json").version)')")
-PREV_TAG=$(git tag --sort=-creatordate | grep -A1 "^$CURRENT_TAG$" | tail -n1)
-if [ "$PREV_TAG" = "$CURRENT_TAG" ]; then
-  PREV_TAG=$(git tag --sort=-creatordate | grep -A2 "^$CURRENT_TAG$" | tail -n1)
-fi
-
 echo "Current version: $CURRENT_TAG"
-echo "Previous version: $PREV_TAG"
 echo ""
-echo "--- Git Commits ---"
-if [ -n "$PREV_TAG" ] && [ "$PREV_TAG" != "$CURRENT_TAG" ]; then
-  git log "$PREV_TAG..HEAD" --oneline --no-decorate
-else
-  git log --oneline --no-decorate -50
-fi
-echo ""
-echo "--- CHANGELOG Details ---"
-# Find current version section in CHANGELOG
-if [ -f CHANGELOG.md ]; then
-  CHANGELOG_CONTENT=$(awk '/^## [0-9]/{p=0} /^## '${CURRENT_TAG#v}'/{p=1} p' CHANGELOG.md)
-  echo "$CHANGELOG_CONTENT"
-  echo ""
-  echo "--- Summary of Major Changes ---"
-  # Simple summary
-  echo "$CHANGELOG_CONTENT" | awk '/^## /{p=0} /^### Changes/{p=1} p' | head -100 | sed 's/^- /*/'
-fi
 
-# 7. Switch to feature branch and rebase
-git checkout feat/allowed-agents-v2
-git rebase main
-
-# 8. Build and install
+# 7. Build and install
 npm run build
 npm i -g .
 
-# 9. Check version
+# 8. Check version
 NEW_VERSION=$(openclaw --version)
 echo "✅ Update complete! New version: $NEW_VERSION"
 echo ""
 
-# 10. Verify config migration
-echo "=== Verifying Config Migration ==="
-echo "Checking model fallback chain..."
-cat ~/.openclaw/openclaw.json | grep -A 10 '"model"' || echo "⚠️  Model config not found (may be normal)"
-echo ""
-
-# 11. Restart gateway
+# 9. Restart gateway
 echo "=== Restarting Gateway ==="
 systemctl --user restart openclaw-gateway
 
-# 12. Verify Gateway health
+# 10. Verify Gateway health
 echo "=== Checking Gateway Health ==="
-sleep 3  # Wait for Gateway to start
+sleep 3
 if command -v openclaw &>/dev/null; then
   openclaw health 2>/dev/null || openclaw status
 else
   echo "⚠️  openclaw command not available, please check Gateway status manually"
 fi
-echo ""
 
-# 13. Completion message
+# 11. Completion message
 echo "=== Update Complete! ==="
 echo ""
 echo "✅ Workspace, memory, auth profiles are preserved automatically"
@@ -118,7 +127,67 @@ echo ""
 
 Run `scripts/update.sh` to automatically complete all steps above.
 
+### Command Line Options
+
+```bash
+./update.sh [OPTIONS]
+
+Options:
+  --dir PATH       OpenClaw project directory (default: $HOME/projects/openclaw)
+  --branch NAME    Git branch to update (default: main)
+  --dry-run       Show what would be done without executing
+  --help          Show this help message
+```
+
+### Examples
+
+```bash
+# Update with defaults
+./update.sh
+
+# Update specific branch
+./update.sh --branch feat/my-branch
+
+# Dry run (preview only)
+./update.sh --dry-run
+
+# Custom project path
+./update.sh --dir /opt/openclaw --branch main
+```
+
 ## Notes
 
-- After rebase, if pushing to fork, use `git push --force`
-- After build, need to restart gateway to take effect
+- **Rebase may cause conflicts** - if conflicts occur, resolve manually and continue
+- **Force push** - after rebase, if pushing to fork, use `git push --force`
+- **Service restart** - gateway will restart, brief downtime expected
+- **Backup first** - always backup before updating!
+
+## Troubleshooting
+
+### Git Conflicts During Rebase
+
+```bash
+# Resolve conflicts manually, then:
+git add .
+git rebase --continue
+# Continue with build steps
+```
+
+### Build Fails
+
+```bash
+# Clean and retry:
+rm -rf node_modules dist
+npm install
+npm run build
+```
+
+### Gateway Won't Start
+
+```bash
+# Check status:
+systemctl --user status openclaw-gateway
+
+# View logs:
+journalctl --user -u openclaw-gateway -n 50
+```
