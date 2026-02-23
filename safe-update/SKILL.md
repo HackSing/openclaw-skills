@@ -1,6 +1,6 @@
 ---
 name: safe-update
-description: Update OpenClaw from source code. Supports custom project path and branch. Includes pulling latest branch, rebasing, building and installing, restarting service. Triggered when user asks to update OpenClaw, sync source, rebase branch, or rebuild.
+description: Update OpenClaw from source code. Supports custom project path and branch. Includes pulling latest branch, merging upstream, building and installing, restarting service. Triggered when user asks to update OpenClaw, sync source, merge branch, or rebuild.
 ---
 
 # Safe Update
@@ -9,10 +9,11 @@ Update OpenClaw from source to the latest version while preserving local changes
 
 ## ⚠️ Important Warnings
 
-- This script performs **git rebase** and **git push --force** - may lose local changes if not properly committed
+- This script performs **git merge** from upstream - may cause conflicts if branches have diverged
 - Uses **npm i -g .** for global installation - may require sudo
 - Uses **systemctl --user restart** - will restart the OpenClaw service
 - **Backup your config before running!** (see below)
+- **Does NOT automatically push** - you need to push manually if desired
 
 ## Requirements
 
@@ -158,19 +159,20 @@ Options:
 
 ## Notes
 
-- **Rebase may cause conflicts** - if conflicts occur, resolve manually and continue
-- **Force push** - after rebase, if pushing to fork, use `git push --force`
+- **Merge may cause conflicts** - if conflicts occur, resolve manually and continue
+- **Manual push** - script does not auto-push, run `git push` manually if needed
 - **Service restart** - gateway will restart, brief downtime expected
 - **Backup first** - always backup before updating!
 
 ## Troubleshooting
 
-### Git Conflicts During Rebase
+### Git Conflicts During Merge
 
 ```bash
 # Resolve conflicts manually, then:
 git add .
-git rebase --continue
+git merge --continue
+# Or abort: git merge --abort
 # Continue with build steps
 ```
 
