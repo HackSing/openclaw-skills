@@ -26,10 +26,11 @@ Required binaries (must be installed):
 ### Environment Variables (optional)
 
 ```bash
-# Set custom project path
+# Set custom project path (default: $HOME/projects/openclaw)
 export OPENCLAW_PROJECT_DIR="/path/to/openclaw"
 
 # Set custom branch (default: main)
+# Common branches: main, feat/your-branch-name
 export OPENCLAW_BRANCH="your-feature-branch"
 
 # Enable dry-run mode (no actual changes)
