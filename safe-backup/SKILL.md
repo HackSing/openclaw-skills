@@ -71,6 +71,38 @@ OPENCLAW_STATE_DIR=~/.openclaw OPENCLAW_WORKSPACE_DIR=~/.openclaw/workspace ~/.o
 
 Reference: [Migration Guide](https://docs.openclaw.ai/en-US/install/migrating)
 
+### After Restore - Re-configuration Required
+
+After restoring from backup, you may need to re-configure:
+
+1. **Re-authenticate services**:
+   - Telegram bot tokens
+   - Discord bot tokens
+   - Feishu credentials
+   - Other API keys
+
+2. **Re-copy excluded sensitive files** (if needed):
+   ```bash
+   # From a full backup or manually restore:
+   cp /path/to/full/backup/auth-profiles.json ~/.openclaw/agents/main/agent/auth-profiles.json
+   ```
+
+3. **Restart gateway**:
+   ```bash
+   systemctl --user restart openclaw-gateway
+   ```
+
+### Full Backup (Include Sensitive Files)
+
+If you need a complete backup including sensitive files:
+
+```bash
+# Manual backup (includes all files)
+cd ~/.openclaw
+tar -czf /tmp/full-backup-$(date +%Y%m%d).tar.gz .
+# ⚠️ Store securely - this file contains secrets!
+```
+
 ## Security Recommendations
 
 1. **Encrypt before uploading**:
