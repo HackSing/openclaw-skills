@@ -71,6 +71,16 @@ run_cmd() {
     fi
 }
 
+# Validate branch name to prevent shell injection
+validate_branch() {
+    local branch="$1"
+    if [[ ! "$branch" =~ ^[a-zA-Z0-9][a-zA-Z0-9_./-]*$ ]]; then
+        log_error "Invalid branch name: $branch"
+        log_error "Branch names can only contain alphanumeric characters, underscores, hyphens, dots, and forward slashes."
+        exit 1
+    fi
+}
+
 # Check required binaries
 check_dependencies() {
     log_info "Checking dependencies..."
@@ -206,6 +216,9 @@ main() {
     log_info "Starting update process..."
     
     cd "$PROJECT_DIR"
+    
+    # Validate branch name
+    validate_branch "$BRANCH"
     
     # Add upstream if needed
     run_cmd git remote add upstream https://github.com/openclaw/openclaw.git 2>/dev/null || true
