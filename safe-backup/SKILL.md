@@ -5,43 +5,186 @@ description: Backup OpenClaw state directory and workspace. Includes excluding s
 
 # Safe Backup
 
-Backup OpenClaw state directory and workspace.
+Backup OpenClaw state directory and workspace with security best practices.
 
 ## ⚠️ Security Warnings
 
 - **Backup may contain sensitive data** - review before sharing
 - **If uploading to GitHub** - use a private repository and consider encryption
+- **auth-profiles.json is EXCLUDED** - after restore, you must re-authenticate
 - This script does NOT automatically push to any remote
 
-## Quick Backup
+## Quick Start
+
+### 1. Run Backup
 
 ```bash
 ~/.openclaw/skills/safe-backup/scripts/backup.sh
 ```
 
-Or with custom directories:
+### 2. Check Output
 
-```bash
-OPENCLAW_STATE_DIR=~/.openclaw OPENCLAW_WORKSPACE_DIR=~/.openclaw/workspace ~/.openclaw/skills/safe-backup/scripts/backup.sh
+```
+Backup file: /tmp/safe-backup-20260223.tar.gz
 ```
 
-## Backup Contents
+### 3. Store Securely
 
-- `~/.openclaw/` (state directory)
-- `~/.openclaw/workspace/` (workspace)
+See "Storage Options" below.
 
-## Excluded Files (Sensitive)
+---
 
-- `*.log` - log files
-- `*.log.*` - rotated logs
-- `sessions.json` - session data
-- `*.key`, `*.pem` - SSH/TLS keys
-- `.env`, `.env.*` - environment files
-- `id_rsa*`, `id_ed25519*` - SSH keys
-- `*.secret`, `*.token` - secret files
-- `auth-profiles.json` - authentication profiles (may contain tokens)
-- `credentials.json` - credentials
-- `api-keys.json` - API keys
+## What Gets Backed Up
+
+### ✅ Included (Safe to Backup)
+
+| Directory | Contents |
+|-----------|----------|
+| `~/.openclaw/` | OpenClaw configuration |
+| `~/.openclaw/workspace/` | Agent workspace files |
+| `agents/` | Agent definitions |
+| `skills/` | Installed skills |
+| `memory/` | Memory files |
+| `hooks/` | Custom hooks |
+
+### ❌ Excluded (Sensitive - Not Backed Up)
+
+| Pattern | Reason |
+|---------|--------|
+| `*.log` | Log files |
+| `sessions.json` | Session data |
+| `auth-profiles.json` | API tokens & credentials |
+| `.env` | Environment variables |
+| `*.pem`, `*.key` | TLS/SSH keys |
+| `credentials.json` | Stored credentials |
+| `api-keys.json` | API keys |
+
+---
+
+## Complete Workflow
+
+### Phase 1: Backup
+
+```bash
+# Step 1: Run backup
+~/.openclaw/skills/safe-backup/scripts/backup.sh
+
+# Step 2: Verify backup contents
+tar -tzf /tmp/safe-backup-20260223.tar.gz | less
+
+# Step 3: Note the file path
+# Output: /tmp/safe-backup-20260223.tar.gz
+```
+
+### Phase 2: Storage
+
+Choose one:
+
+#### Option A: Local Encrypted Storage (Recommended)
+
+```bash
+# Create encrypted archive
+openssl enc -aes-256-cbc -salt -in /tmp/safe-backup-20260223.tar.gz -out ~/backups/safe-backup-20260223.tar.gz.enc
+
+# Enter a strong password when prompted
+
+# Delete unencrypted backup
+rm /tmp/safe-backup-20260223.tar.gz
+```
+
+#### Option B: Private GitHub Repository
+
+```bash
+# One-time setup: Create private repo on GitHub
+
+# Clone your private repo
+git clone https://github.com/YOUR_USERNAME/safe-backup.git ~/safe-backup
+
+# Extract backup
+mkdir -p ~/safe-backup/2026-02-23
+tar -xzf /tmp/safe-backup-20260223.tar.gz -C ~/safe-backup/2026-02-23/
+
+# Commit and push
+cd ~/safe-backup
+git add .
+git commit -m "Backup 2026-02-23"
+git push origin main
+
+# Delete local copy
+rm -rf ~/safe-backup
+rm /tmp/safe-backup-20260223.tar.gz
+```
+
+#### Option C: rsync to Remote Server
+
+```bash
+# Example: sync to remote server
+rsync -avz --delete \
+  --exclude='*.log' \
+  --exclude='sessions.json' \
+  ~/.openclaw/ user@backup-server:/path/to/backups/
+```
+
+### Phase 3: Restore
+
+#### Step 1: Locate Backup
+
+```bash
+# If encrypted
+openssl enc -aes-256-cbc -d -in ~/backups/safe-backup-20260223.tar.gz.enc -out /tmp/safe-backup.tar.gz
+
+# If plain tarball
+cp /path/to/safe-backup-20260223.tar.gz /tmp/
+```
+
+#### Step 2: Stop Gateway
+
+```bash
+systemctl --user stop openclaw-gateway
+```
+
+#### Step 3: Restore Files
+
+```bash
+# Extract to temporary location
+mkdir -p /tmp/restore
+tar -xzf /tmp/safe-backup.tar.gz -C /tmp/restore
+
+# Restore state directory
+cp -r /tmp/restore/state/* ~/.openclaw/
+
+# Restore workspace (if needed)
+cp -r /tmp/restore/workspace/* ~/.openclaw/workspace/
+```
+
+#### Step 4: Re-authenticate
+
+Because `auth-profiles.json` was excluded, you must re-configure:
+
+```bash
+# Edit config to add authentication
+openclaw config edit
+
+# Or manually create auth-profiles.json
+nano ~/.openclaw/agents/main/agent/auth-profiles.json
+```
+
+Required re-configuration:
+- Telegram bot token
+- Discord bot token  
+- Feishu credentials
+- Any other API keys
+
+#### Step 5: Restart Gateway
+
+```bash
+systemctl --user start openclaw-gateway
+
+# Verify
+openclaw status
+```
+
+---
 
 ## Environment Variables
 
@@ -50,69 +193,46 @@ OPENCLAW_STATE_DIR=~/.openclaw OPENCLAW_WORKSPACE_DIR=~/.openclaw/workspace ~/.o
 | `OPENCLAW_STATE_DIR` | `$HOME/.openclaw` | OpenClaw state directory |
 | `OPENCLAW_WORKSPACE_DIR` | `$HOME/.openclaw/workspace` | Workspace directory |
 
-## Manual Backup Flow
-
-1. **Run backup script**:
-   ```bash
-   ~/.openclaw/skills/safe-backup/scripts/backup.sh
-   ```
-   Generates: `/tmp/safe-backup-YYYYMMDD.tar.gz`
-
-2. **Review backup** (important!):
-   ```bash
-   tar -tzf /tmp/safe-backup-YYYYMMDD.tar.gz | less
-   ```
-
-3. **Store safely**:
-   - Recommended: Encrypted storage (e.g., encrypted USB, password-protected archive)
-   - If using GitHub: Use a **private** repository and consider git-crypt
-
-## Restore Flow
-
-Reference: [Migration Guide](https://docs.openclaw.ai/en-US/install/migrating)
-
-### After Restore - Re-configuration Required
-
-After restoring from backup, you may need to re-configure:
-
-1. **Re-authenticate services**:
-   - Telegram bot tokens
-   - Discord bot tokens
-   - Feishu credentials
-   - Other API keys
-
-2. **Re-copy excluded sensitive files** (if needed):
-   ```bash
-   # From a full backup or manually restore:
-   cp /path/to/full/backup/auth-profiles.json ~/.openclaw/agents/main/agent/auth-profiles.json
-   ```
-
-3. **Restart gateway**:
-   ```bash
-   systemctl --user restart openclaw-gateway
-   ```
-
-### Full Backup (Include Sensitive Files)
-
-If you need a complete backup including sensitive files:
+Example:
 
 ```bash
-# Manual backup (includes all files)
-cd ~/.openclaw
-tar -czf /tmp/full-backup-$(date +%Y%m%d).tar.gz .
-# ⚠️ Store securely - this file contains secrets!
+OPENCLAW_STATE_DIR=/data/openclaw ~/.openclaw/skills/safe-backup/scripts/backup.sh
 ```
 
-## Security Recommendations
+---
 
-1. **Encrypt before uploading**:
-   ```bash
-   # Create encrypted archive
-   tar -czf - backup-dir/ | openssl enc -aes-256-cbc -salt -out backup.tar.gz.enc
-   # Decrypt
-   openssl enc -aes-256-cbc -d -in backup.tar.gz.enc | tar -xzf -
-   ```
+## Troubleshooting
 
-2. **Use password manager** - never store backup passwords in the backup itself
+### "State directory not found"
 
-3. **Verify exclusions** - regularly check what files are included in backups
+```bash
+# Check if OpenClaw is installed
+ls -la ~/.openclaw
+```
+
+### "Permission denied"
+
+```bash
+# Run with appropriate permissions
+chmod +x ~/.openclaw/skills/safe-backup/scripts/backup.sh
+```
+
+### Restore Fails
+
+```bash
+# Check backup integrity
+tar -tzf /tmp/safe-backup.tar.gz
+
+# If encrypted, verify password
+openssl enc -aes-256-cbc -d -in backup.enc -o /dev/null
+```
+
+---
+
+## Best Practices
+
+1. **Backup regularly** - at least weekly
+2. **Test restore** - periodically verify backups work
+3. **Store offsite** - keep backup in different location
+4. **Encrypt** - never store unencrypted backups in cloud
+5. **Document** - keep notes on what was re-configured after restore
