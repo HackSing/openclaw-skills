@@ -118,25 +118,35 @@ class FeishuClient:
         Returns:
             操作结果
         """
-        # 先获取文档的所有块，找到最后一个
+        # 先获取文档的所有块，找到第一个块
         blocks = self.list_blocks(doc_token)
         
-        url = f"{self.BASE_URL}/docx/v1/documents/{doc_token}/blocks/children"
+        # 正确的 API 路径：/documents/{doc_id}/blocks/{block_id}/children
+        first_block = blocks[0] if blocks else None
         
-        if blocks:
-            # 追加到最后一个块之后
-            last_block = blocks[-1]
-            payload = {
-                "children": [{"text": content, "type": "text"}],
-                "direction": "after",
-                "block_id": last_block.get("block_id")
-            }
+        if first_block:
+            url = f"{self.BASE_URL}/docx/v1/documents/{doc_token}/blocks/{first_block.get('block_id')}/children?document_revision_id=-1"
         else:
-            # 文档为空，在开始插入
-            payload = {
-                "children": [{"text": content, "type": "text"}],
-                "direction": "start"
-            }
+            raise Exception("文档为空，无法追加内容")
+        
+        # 正确的 payload 格式
+        payload = {
+            "children": [
+                {
+                    "block_type": 2,  # 文本块
+                    "text": {
+                        "elements": [
+                            {
+                                "text_run": {
+                                    "content": content
+                                }
+                            }
+                        ]
+                    }
+                }
+            ],
+            "index": 0
+        }
         
         resp = requests.post(url, json=payload, headers=self.headers)
         data = resp.json()
@@ -216,6 +226,8 @@ class FeishuClient:
         """
         删除块
         
+        注意：飞书文档 API 不支持删除单个块，请使用 delete_doc() 删除整个文档
+        
         Args:
             doc_token: 文档令牌
             block_id: 块 ID
@@ -223,12 +235,25 @@ class FeishuClient:
         Returns:
             操作结果
         """
-        url = f"{self.BASE_URL}/docx/v1/documents/{doc_token}/blocks/{block_id}"
-        resp = requests.delete(url, headers=self.headers)
+        raise Exception("飞书文档 API 不支持删除块，请使用 delete_doc() 删除整个文档")
+    
+    def delete_doc(self, doc_token: str) -> Dict[str, Any]:
+        """
+        删除整个文档
+        
+        Args:
+            doc_token: 文档令牌
+        
+        Returns:
+            操作结果
+        """
+        url = f"{self.BASE_URL}/drive/v1/files/{doc_token}"
+        params = {"type": "docx", "token": doc_token}
+        resp = requests.delete(url, params=params, headers=self.headers)
         data = resp.json()
         
         if data.get("code") != 0:
-            raise Exception(f"删除块失败: {data.get('msg')}")
+            raise Exception(f"删除文档失败: {data.get('msg')}")
         
         return data
 

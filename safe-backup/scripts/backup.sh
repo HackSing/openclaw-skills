@@ -12,9 +12,12 @@ WORKSPACE_DIR="${OPENCLAW_WORKSPACE_DIR:-$HOME/.openclaw/workspace}"
 
 # Sensitive files to exclude (add more as needed)
 EXCLUDE_PATTERNS=(
+    # Logs & Sessions
     "*.log"
     "*.log.*"
     "sessions.json"
+    
+    # Credentials & Keys
     "*.key"
     "*.pem"
     ".env"
@@ -26,6 +29,16 @@ EXCLUDE_PATTERNS=(
     "auth-profiles.json"
     "credentials.json"
     "api-keys.json"
+    
+    # Runtime generated (not needed for migration)
+    "*.sock"
+    "*.pid"
+    "*.lock"
+    "node_modules/"
+    "dist/"
+    ".cache/"
+    "temp/"
+    "tmp/"
 )
 
 echo "=== Safe Backup ==="

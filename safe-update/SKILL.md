@@ -69,7 +69,7 @@ export DRY_RUN="true"
 
 ```bash
 # 1. Enter project directory
-cd /home/ubuntu/projects/openclaw
+cd "${OPENCLAW_PROJECT_DIR:-$HOME/projects/openclaw}"
 
 # 2. Backup config files (good practice before update!)
 echo "=== Backing up config files ==="

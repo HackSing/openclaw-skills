@@ -35,6 +35,7 @@ Enable these permissions:
 - `docx:document` - Document operations
 - `drive:drive.search:readonly` - Cloud drive search
 - `search:docs:read` - Document search
+- `space:document:delete` - Delete documents (new!)
 
 ### Step 2: Generate Authorization URL
 
@@ -93,7 +94,10 @@ block = client.get_block("doc_token", "block_id")
 client.update_block("doc_token", "block_id", "New content")
 
 # Delete block
-client.delete_block("doc_token", "block_id")
+# client.delete_block("doc_token", "block_id")  # 不支持
+
+# Delete entire document (new!)
+client.delete_doc("doc_token")
 ```
 
 ---
@@ -132,8 +136,9 @@ append_document("doc_token", "## More", user_access_token="u-xxx")
 | `append_doc(doc_token, content)` | Append content to end |
 | `list_blocks(doc_token)` | List all blocks |
 | `get_block(doc_token, block_id)` | Get specific block |
-| `update_block(doc_token, block_id, content)` | Update block content |
-| `delete_block(doc_token, block_id)` | Delete block |
+| `update_block(doc_token, block_id, content)` | Update block content (not supported) |
+| `delete_block(doc_token, block_id)` | Delete block (not supported) |
+| `delete_doc(doc_token)` | Delete entire document (new!) |
 
 ---
 
@@ -142,6 +147,12 @@ append_document("doc_token", "## More", user_access_token="u-xxx")
 1. `user_access_token` has an expiration time, needs periodic refresh
 2. The `scope` in authorization URL must be enabled in Feishu Open Platform
 3. This skill accesses personal cloud documents using user identity
+4. Deleting documents requires `space:document:delete` permission
+
+## Known Issues
+
+1. **删除块 API 不支持** - 飞书文档 API 不支持删除单个块，请使用 `delete_doc()` 删除整个文档
+2. **追加内容格式必须正确** - payload 必须使用 `block_type: 2` 和 `text.elements` 结构
 
 ---
 
