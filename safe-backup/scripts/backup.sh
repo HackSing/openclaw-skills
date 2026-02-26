@@ -28,6 +28,7 @@ EXCLUDE_PATTERNS=(
     "*.log"
     "*.log.*"
     "sessions.json"
+    "logs/"
     
     # Credentials & Keys
     "*.key"
@@ -51,6 +52,22 @@ EXCLUDE_PATTERNS=(
     ".cache/"
     "temp/"
     "tmp/"
+    
+    # OpenClaw runtime directories (not needed for migration)
+    "sessions/"
+    "browser/"
+    "canvas/"
+    "media/"
+    "backups/"
+    "delivery-queue/"
+    "devices/"
+    "subagents/"
+    "completions/"
+    
+    # Backup files
+    "*.bak"
+    "*.save"
+    "update-check.json"
 )
 
 echo "=== Safe Backup ==="

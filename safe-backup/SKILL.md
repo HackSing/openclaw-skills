@@ -148,12 +148,26 @@ Temp directory will be `/tmp`.
 | Pattern | Reason |
 |---------|--------|
 | `*.log` | Log files |
+| `*.log.*` | Log rotation files |
 | `sessions.json` | Session data |
+| `logs/` | Log directory |
 | `auth-profiles.json` | API tokens & credentials |
 | `.env` | Environment variables |
 | `*.pem`, `*.key` | TLS/SSH keys |
 | `credentials.json` | Stored credentials |
 | `api-keys.json` | API keys |
+| `sessions/` | Runtime sessions |
+| `browser/` | Browser cache |
+| `canvas/` | Canvas cache |
+| `media/` | Temporary media files |
+| `backups/` | Backup directory itself |
+| `delivery-queue/` | Runtime queue |
+| `devices/` | Device cache |
+| `subagents/` | Runtime subagents |
+| `completions/` | Auto-completion cache |
+| `*.bak` | Backup files |
+| `*.save` | Save files |
+| `update-check.json` | Update check cache |
 
 ---
 
