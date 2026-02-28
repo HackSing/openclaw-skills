@@ -1,9 +1,9 @@
 ---
-name: twitter-reader
-description: 推特内容抓取与自动化运营技能。支持实时读取单条推文内容，也支持定时批量巡逻、LLM 提炼和审阅推送。
+name: social-reader
+description: 社交媒体内容抓取与自动化运营技能。支持实时读取单条帖子内容，也支持定时批量巡逻、LLM 提炼和审阅推送。
 ---
 
-# Twitter Reader 技能
+# Social Reader 技能
 
 该技能封装了 Twitter 内容抓取与自动化监控工作流。提供两种使用模式：
 - **交互模式**：智能体实时抓取单条推文，在对话中阅读、讨论或生成回复。
@@ -48,7 +48,7 @@ pip install requests
 ```python
 import sys
 
-skill_dir = r"d:\AIWareTop\Agent\openclaw-skills\twitter-reader"
+skill_dir = r"d:\AIWareTop\Agent\openclaw-skills\social-reader"
 if skill_dir not in sys.path:
     sys.path.append(skill_dir)
 

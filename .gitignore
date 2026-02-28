@@ -21,9 +21,9 @@ Thumbs.db
 *.tmp
 *.temp
 
-# Twitter Reader State
-twitter-reader/archive.json
-twitter-reader/drafts.json
-twitter-reader/pending_tweets.json
-twitter-reader/seen_ids.json
-twitter-reader/input_urls.txt
+# Social Reader State
+social-reader/archive.json
+social-reader/drafts.json
+social-reader/pending_tweets.json
+social-reader/seen_ids.json
+social-reader/input_urls.txt
