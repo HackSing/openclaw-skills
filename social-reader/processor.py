@@ -45,9 +45,17 @@ def get_llm_client():
     }
 
 
-def call_llm(config, user_content):
-    """调用 OpenAI 兼容 API"""
+LANG_INSTRUCTIONS = {
+    "zh": "\n\nPlease output in Chinese (中文).",
+    "en": "\n\nPlease output in English.",
+}
+
+
+def call_llm(config, user_content, lang="zh"):
+    """调用 OpenAI 兼容 API, lang: 'zh' (default) or 'en'"""
     import requests
+
+    system_prompt = SYSTEM_PROMPT + LANG_INSTRUCTIONS.get(lang, LANG_INSTRUCTIONS["zh"])
 
     headers = {
         "Authorization": f"Bearer {config['api_key']}",
@@ -56,7 +64,7 @@ def call_llm(config, user_content):
     payload = {
         "model": config["model"],
         "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_content},
         ],
         "max_tokens": 500,
@@ -74,34 +82,33 @@ def call_llm(config, user_content):
         data = resp.json()
         return data["choices"][0]["message"]["content"].strip()
     except Exception as e:
-        print(f"  LLM 调用失败: {e}", file=sys.stderr)
+        print(f"  LLM call failed: {e}", file=sys.stderr)
         return None
 
 
 def build_prompt(tweet):
-    """将推文数据组装为 LLM 输入"""
+    """Assemble tweet data into LLM input"""
     content = tweet.get("content", {})
     tweet_type = tweet.get("type", "tweet")
 
     parts = []
-    author = content.get("author", "未知")
+    author = content.get("author", "Unknown")
     username = content.get("username", "")
-    parts.append(f"作者: {author} (@{username})")
+    parts.append(f"Author: {author} (@{username})")
 
     if tweet_type == "article":
         title = content.get("title", "")
         full_text = content.get("full_text", "") or content.get("preview", "")
-        parts.append(f"标题: {title}")
-        parts.append(f"正文:\n{full_text[:2000]}")
+        parts.append(f"Title: {title}")
+        parts.append(f"Body:\n{full_text[:2000]}")
     else:
         text = content.get("text", "")
-        parts.append(f"内容:\n{text}")
+        parts.append(f"Content:\n{text}")
 
-    # 附加互动数据作为参考
     likes = content.get("likes", 0)
     retweets = content.get("retweets", 0)
     if likes or retweets:
-        parts.append(f"互动: {likes} 赞 / {retweets} 转发")
+        parts.append(f"Engagement: {likes} likes / {retweets} retweets")
 
     return "\n".join(parts)
 

@@ -38,15 +38,14 @@ def save_drafts(drafts):
         json.dump(drafts, f, ensure_ascii=False, indent=2)
 
 
-def regenerate_commentary(draft):
-    """对单条草稿重新调用 LLM 生成锐评"""
+def regenerate_commentary(draft, lang="zh"):
+    """Regenerate LLM commentary for a single draft"""
     from processor import get_llm_client, call_llm, build_prompt, truncate_text
 
     config = get_llm_client()
     if not config:
         return None
 
-    # 构造一个与 pending 格式兼容的结构
     fake_tweet = {
         "type": "tweet",
         "content": {
@@ -56,7 +55,7 @@ def regenerate_commentary(draft):
         }
     }
     prompt = build_prompt(fake_tweet)
-    commentary = call_llm(config, prompt)
+    commentary = call_llm(config, prompt, lang=lang)
     if commentary:
         return truncate_text(commentary)
     return None
@@ -109,6 +108,8 @@ class ReviewHandler(BaseHTTPRequestHandler):
             self._handle_regenerate()
         elif path == "/api/archive":
             self._handle_archive()
+        elif path == "/api/refresh":
+            self._handle_refresh()
         else:
             self.send_error(404)
 
@@ -119,7 +120,7 @@ class ReviewHandler(BaseHTTPRequestHandler):
         status = body.get("status")  # approved / rejected
 
         if not tweet_id or status not in ("approved", "rejected"):
-            self._send_json({"error": "参数错误"}, 400)
+            self._send_json({"error": "Invalid parameters"}, 400)
             return
 
         drafts = load_drafts()
@@ -136,7 +137,7 @@ class ReviewHandler(BaseHTTPRequestHandler):
             print(f"  📋 {tweet_id} → {status}")
             self._send_json({"success": True, "status": status})
         else:
-            self._send_json({"error": "未找到该草稿"}, 404)
+            self._send_json({"error": "Draft not found"}, 404)
 
     def _handle_regenerate(self):
         """处理驳回后重新生成"""
@@ -144,8 +145,12 @@ class ReviewHandler(BaseHTTPRequestHandler):
         tweet_id = body.get("tweet_id")
 
         if not tweet_id:
-            self._send_json({"error": "参数错误"}, 400)
+            self._send_json({"error": "Missing tweet_id"}, 400)
             return
+
+        lang = body.get("lang", "zh")
+        if lang not in ("zh", "en"):
+            lang = "zh"
 
         drafts = load_drafts()
         target = None
@@ -155,11 +160,11 @@ class ReviewHandler(BaseHTTPRequestHandler):
                 break
 
         if not target:
-            self._send_json({"error": "未找到该草稿"}, 404)
+            self._send_json({"error": "Draft not found"}, 404)
             return
 
-        print(f"  🔄 重新生成 {tweet_id}...", end=" ")
-        new_commentary = regenerate_commentary(target)
+        print(f"  \u0052egenerate {tweet_id} (lang={lang})...", end=" ")
+        new_commentary = regenerate_commentary(target, lang=lang)
 
         if new_commentary:
             target["commentary"] = new_commentary
@@ -167,16 +172,18 @@ class ReviewHandler(BaseHTTPRequestHandler):
             target["status"] = "pending_review"
             target["generated_at"] = datetime.now().isoformat()
             target["regenerated"] = target.get("regenerated", 0) + 1
+            target["lang"] = lang
             save_drafts(drafts)
-            print(f"✓ ({len(new_commentary)} 字)")
+            print(f"done ({len(new_commentary)} chars)")
             self._send_json({
                 "success": True,
                 "commentary": new_commentary,
                 "char_count": len(new_commentary),
+                "lang": lang,
             })
         else:
-            print("✗")
-            self._send_json({"error": "LLM 重新生成失败"}, 500)
+            print("failed")
+            self._send_json({"error": "LLM regeneration failed"}, 500)
 
     def _handle_archive(self):
         """归档已审阅的草稿"""
@@ -185,7 +192,7 @@ class ReviewHandler(BaseHTTPRequestHandler):
         remaining = [d for d in drafts if d.get("status") not in ("approved", "rejected")]
 
         if not to_archive:
-            self._send_json({"error": "没有可归档的条目"}, 400)
+            self._send_json({"error": "No items to archive"}, 400)
             return
 
         # 追加到 archive.json
@@ -206,8 +213,30 @@ class ReviewHandler(BaseHTTPRequestHandler):
 
         # 更新 drafts.json
         save_drafts(remaining)
-        print(f"  🗂 已归档 {len(to_archive)} 条，剩余 {len(remaining)} 条")
+        print(f"  Archived {len(to_archive)}, remaining {len(remaining)}")
         self._send_json({"success": True, "archived": len(to_archive), "remaining": len(remaining)})
+
+    def _handle_refresh(self):
+        """Trigger watcher + processor to pick up new URLs and generate drafts"""
+        print("  🔄 Refresh triggered from web UI...")
+        try:
+            from watcher import watch
+            from processor import process
+
+            new_tweets = watch()
+            new_drafts = 0
+            if new_tweets > 0:
+                new_drafts = process()
+
+            print(f"  Refresh done: {new_tweets} fetched, {new_drafts} processed")
+            self._send_json({
+                "success": True,
+                "fetched": new_tweets,
+                "processed": new_drafts,
+            })
+        except Exception as e:
+            print(f"  Refresh failed: {e}")
+            self._send_json({"error": str(e)}, 500)
 
     def _serve_html(self):
         """返回审阅页面 HTML"""
@@ -219,16 +248,16 @@ class ReviewHandler(BaseHTTPRequestHandler):
 
 
 def generate_review_html():
-    """生成审阅台 HTML（从服务器动态加载数据）"""
+    """Generate the review dashboard HTML"""
     return """<!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>推文锐评审阅台</title>
+  <title>Social Reader Review</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: -apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      font-family: -apple-system, 'Segoe UI', sans-serif;
       background: #0d1117; color: #c9d1d9; padding: 40px 20px;
     }
     .container { max-width: 720px; margin: 0 auto; }
@@ -252,6 +281,7 @@ def generate_review_html():
       font-weight: 600; text-transform: uppercase;
     }
     .badge-regen { background: #1f1d2e; color: #d2a8ff; border: 1px solid #d2a8ff33; }
+    .badge-lang { background: #1d2e1f; color: #7ee787; border: 1px solid #7ee78733; }
     .label {
       color: #8b949e; font-size: 12px; text-transform: uppercase;
       letter-spacing: 1px; margin-bottom: 6px;
@@ -281,14 +311,20 @@ def generate_review_html():
     .btn-reject:hover { border-color: #f85149; color: #f85149; }
     .btn-regen { border-color: #d2a8ff44; }
     .btn-regen:hover { border-color: #d2a8ff; color: #d2a8ff; }
+    .btn-lang { border-color: #7ee78744; }
+    .btn-lang:hover { border-color: #7ee787; color: #7ee787; }
     .toolbar {
       display: flex; justify-content: flex-end; margin-bottom: 20px; gap: 10px;
     }
-    .btn-archive {
-      padding: 8px 20px; border: 1px solid #f0883e44; border-radius: 8px;
-      background: #21262d; color: #f0883e; cursor: pointer;
+    .btn-toolbar {
+      padding: 8px 20px; border: 1px solid #30363d; border-radius: 8px;
+      background: #21262d; cursor: pointer;
       font-size: 14px; font-weight: 600; transition: all 0.15s;
     }
+    .btn-refresh { color: #58a6ff; border-color: #58a6ff44; }
+    .btn-refresh:hover { background: #58a6ff22; border-color: #58a6ff; }
+    .btn-refresh:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-archive { color: #f0883e; border-color: #f0883e44; }
     .btn-archive:hover { background: #f0883e22; border-color: #f0883e; }
     .btn-archive:disabled { opacity: 0.4; cursor: not-allowed; }
     .spinner { display: inline-block; width: 14px; height: 14px;
@@ -311,10 +347,11 @@ def generate_review_html():
 </head>
 <body>
   <div class="container">
-    <h1>🔍 推文锐评审阅台</h1>
-    <p class="subtitle" id="subtitle">加载中...</p>
+    <h1>🔍 Social Reader Review</h1>
+    <p class="subtitle" id="subtitle">Loading...</p>
     <div class="toolbar">
-      <button class="btn-archive" id="archiveBtn" onclick="archiveAll()" disabled>🗂 归档已处理</button>
+      <button class="btn-toolbar btn-refresh" id="refreshBtn" onclick="refreshPipeline()">🔄 Refresh</button>
+      <button class="btn-toolbar btn-archive" id="archiveBtn" onclick="archiveAll()" disabled>🗂 Archive</button>
     </div>
     <div id="cards"></div>
   </div>
@@ -346,44 +383,50 @@ function renderCards(drafts) {
   const pendingReview = drafts.filter(d => d.status === 'pending_review');
   const reviewed = drafts.filter(d => d.status === 'approved' || d.status === 'rejected');
   document.getElementById('subtitle').textContent =
-    `待审阅 ${pendingReview.length} 条 · 已处理 ${reviewed.length} 条`;
+    `Pending: ${pendingReview.length} · Reviewed: ${reviewed.length}`;
   document.getElementById('archiveBtn').disabled = reviewed.length === 0;
 
   const container = document.getElementById('cards');
   if (drafts.length === 0) {
-    container.innerHTML = '<div class="empty">暂无草稿</div>';
+    container.innerHTML = '<div class="empty">No drafts yet</div>';
     return;
   }
 
   container.innerHTML = drafts.map((d, i) => {
     const regenBadge = d.regenerated
-      ? `<span class="badge badge-regen">已重写 ${d.regenerated} 次</span>` : '';
+      ? `<span class="badge badge-regen">Rewritten ${d.regenerated}x</span>` : '';
+    const currentLang = d.lang || 'zh';
+    const langBadge = currentLang === 'en'
+      ? '<span class="badge badge-lang">EN</span>' : '';
     const isApproved = d.status === 'approved';
-    const isRejected = d.status === 'rejected';
+    const toggleLabel = currentLang === 'zh' ? '🌐 English' : '🌐 Chinese';
+    const toggleLang = currentLang === 'zh' ? 'en' : 'zh';
 
     return `
-    <div class="card ${d.status === 'approved' ? 'approved' : ''} ${d.status === 'rejected' ? 'rejected' : ''}" id="card-${i}" data-id="${d.tweet_id}">
+    <div class="card ${d.status === 'approved' ? 'approved' : ''} ${d.status === 'rejected' ? 'rejected' : ''}" id="card-${i}" data-id="${d.tweet_id}" data-lang="${currentLang}">
       <div class="card-header">
         <span class="author">@${escapeHtml(d.original_username || '?')}</span>
         <div class="badges">
           ${regenBadge}
-          <span class="char-count">${d.char_count || '?'} 字</span>
+          ${langBadge}
+          <span class="char-count">${d.char_count || '?'} chars</span>
         </div>
       </div>
       <div class="original">
-        <div class="label">原文摘要</div>
+        <div class="label">Original</div>
         <p>${escapeHtml((d.original_text || '').substring(0, 200))}</p>
-        <a href="${d.original_url || '#'}" target="_blank" class="link">查看原推</a>
+        <a href="${d.original_url || '#'}" target="_blank" class="link">View source</a>
       </div>
       <div class="commentary">
-        <div class="label">AI 锐评草稿</div>
+        <div class="label">AI Commentary</div>
         <p id="commentary-${i}">${escapeHtml(d.commentary || '')}</p>
       </div>
       <div class="actions">
-        <button class="btn btn-copy" onclick="copyText(${i})" ${isApproved ? 'disabled' : ''}>📋 复制</button>
-        <button class="btn btn-approve" onclick="review(${i}, 'approved')" ${isApproved ? 'disabled' : ''}>✓ 通过</button>
-        <button class="btn btn-reject" onclick="review(${i}, 'rejected')" ${isApproved ? 'disabled' : ''}>✗ 驳回</button>
-        <button class="btn btn-regen" onclick="regenerate(${i})" id="regen-${i}" ${isApproved ? 'disabled' : ''}>🔄 重写</button>
+        <button class="btn btn-copy" onclick="copyText(${i})" ${isApproved ? 'disabled' : ''}>📋 Copy</button>
+        <button class="btn btn-approve" onclick="review(${i}, 'approved')" ${isApproved ? 'disabled' : ''}>✓ Approve</button>
+        <button class="btn btn-reject" onclick="review(${i}, 'rejected')" ${isApproved ? 'disabled' : ''}>✗ Reject</button>
+        <button class="btn btn-regen" onclick="regenerate(${i})" id="regen-${i}" ${isApproved ? 'disabled' : ''}>🔄 Rewrite</button>
+        <button class="btn btn-lang" onclick="toggleLang(${i}, '${toggleLang}')" id="lang-${i}" ${isApproved ? 'disabled' : ''}>${toggleLabel}</button>
       </div>
     </div>`;
   }).join('');
@@ -393,9 +436,9 @@ async function copyText(index) {
   const el = document.getElementById('commentary-' + index);
   try {
     await navigator.clipboard.writeText(el.textContent);
-    showToast('已复制到剪贴板');
+    showToast('Copied to clipboard');
   } catch(e) {
-    showToast('复制失败', true);
+    showToast('Copy failed', true);
   }
 }
 
@@ -414,50 +457,105 @@ async function review(index, status) {
     card.className = 'card ' + status;
     if (status === 'approved') {
       card.querySelectorAll('.btn').forEach(b => b.disabled = true);
-      showToast('✓ 已通过，状态已保存');
+      showToast('✓ Approved');
     } else {
-      showToast('✗ 已驳回，可点击"重写"重新生成');
+      showToast('✗ Rejected — click Rewrite to regenerate');
     }
   } else {
-    showToast(data.error || '操作失败', true);
+    showToast(data.error || 'Operation failed', true);
   }
 }
 
 async function regenerate(index) {
   const card = document.getElementById('card-' + index);
   const tweetId = card.dataset.id;
+  const currentLang = card.dataset.lang || 'zh';
   const btn = document.getElementById('regen-' + index);
 
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>重写中...';
+  btn.innerHTML = '<span class="spinner"></span>Rewriting...';
 
   const resp = await fetch(API + '/api/regenerate', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({tweet_id: tweetId})
+    body: JSON.stringify({tweet_id: tweetId, lang: currentLang})
   });
   const data = await resp.json();
 
   if (data.success) {
     document.getElementById('commentary-' + index).textContent = data.commentary;
     card.className = 'card';
-    card.querySelector('.char-count').textContent = data.char_count + ' 字';
-    btn.innerHTML = '🔄 重写';
+    card.querySelector('.char-count').textContent = data.char_count + ' chars';
+    btn.innerHTML = '🔄 Rewrite';
     btn.disabled = false;
-    // 刷新页面数据
     loadDrafts();
-    showToast('🔄 重写完成 (' + data.char_count + ' 字)');
+    showToast('🔄 Rewritten (' + data.char_count + ' chars)');
   } else {
-    btn.innerHTML = '🔄 重写';
+    btn.innerHTML = '🔄 Rewrite';
     btn.disabled = false;
-    showToast(data.error || '重写失败', true);
+    showToast(data.error || 'Rewrite failed', true);
   }
+}
+
+async function toggleLang(index, targetLang) {
+  const card = document.getElementById('card-' + index);
+  const tweetId = card.dataset.id;
+  const btn = document.getElementById('lang-' + index);
+
+  btn.disabled = true;
+  const langName = targetLang === 'en' ? 'English' : 'Chinese';
+  btn.innerHTML = '<span class="spinner"></span>' + langName + '...';
+
+  const resp = await fetch(API + '/api/regenerate', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({tweet_id: tweetId, lang: targetLang})
+  });
+  const data = await resp.json();
+
+  if (data.success) {
+    document.getElementById('commentary-' + index).textContent = data.commentary;
+    card.dataset.lang = targetLang;
+    card.querySelector('.char-count').textContent = data.char_count + ' chars';
+    loadDrafts();
+    showToast('🌐 Switched to ' + langName);
+  } else {
+    btn.disabled = false;
+    btn.innerHTML = '🌐 ' + langName;
+    showToast(data.error || 'Language switch failed', true);
+  }
+}
+
+async function refreshPipeline() {
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Refreshing...';
+
+  try {
+    const resp = await fetch(API + '/api/refresh', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: '{}'
+    });
+    const data = await resp.json();
+
+    if (data.success) {
+      showToast(`🔄 Fetched: ${data.fetched}, Processed: ${data.processed}`);
+      loadDrafts();
+    } else {
+      showToast(data.error || 'Refresh failed', true);
+    }
+  } catch(e) {
+    showToast('Refresh failed: ' + e.message, true);
+  }
+  btn.innerHTML = '🔄 Refresh';
+  btn.disabled = false;
 }
 
 async function archiveAll() {
   const btn = document.getElementById('archiveBtn');
   btn.disabled = true;
-  btn.textContent = '🗂 归档中...';
+  btn.textContent = '🗂 Archiving...';
 
   const resp = await fetch(API + '/api/archive', {
     method: 'POST',
@@ -467,16 +565,15 @@ async function archiveAll() {
   const data = await resp.json();
 
   if (data.success) {
-    showToast(`🗂 已归档 ${data.archived} 条`);
+    showToast(`🗂 Archived ${data.archived} items`);
     loadDrafts();
   } else {
-    showToast(data.error || '归档失败', true);
+    showToast(data.error || 'Archive failed', true);
   }
-  btn.textContent = '🗂 归档已处理';
+  btn.textContent = '🗂 Archive';
   btn.disabled = false;
 }
 
-// 页面加载时拉取数据
 loadDrafts();
 </script>
 </body>
