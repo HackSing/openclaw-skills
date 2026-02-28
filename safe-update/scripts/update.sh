@@ -67,7 +67,7 @@ run_cmd() {
         echo -e "${YELLOW}[DRY-RUN]${NC} Would execute: $*"
     else
         log_info "Executing: $*"
-        eval "$@"
+        "$@"
     fi
 }
 
@@ -221,7 +221,7 @@ main() {
     validate_branch "$BRANCH"
     
     # Add upstream if needed
-    run_cmd git remote add upstream https://github.com/openclaw/openclaw.git 2>/dev/null || true
+    git remote add upstream https://github.com/openclaw/openclaw.git 2>/dev/null || true
     
     # Fetch upstream
     run_cmd git fetch upstream

@@ -44,28 +44,28 @@ export DRY_RUN="true"
 
 ## Workflow
 
-### 第一步：分析当前状态（必须先执行）
+### Step 1: Analyze Current State (Must Run First)
 
-在执行任何更新前，先检查：
-1. 当前分支是否有未提交的更改
-2. 当前分支是否有本地修改
-3. upstream 是否有新提交
-4. 根据情况推荐最合适的更新方式
+Before executing any update, check:
+1. Whether the current branch has uncommitted changes
+2. Whether the current branch has local modifications
+3. Whether upstream has new commits
+4. Recommend the most appropriate update strategy based on the situation
 
-**推荐策略：**
+**Recommended Strategy:**
 
-| 情况 | 推荐方式 | 理由 |
-|------|---------|------|
-| 有未提交的本地修改 | 先 commit/stash，然后 **merge** | 安全，不丢失修改 |
-| 本地只有干净的提交 | 可以选 **merge** 或 **rebase** | merge 安全，rebase 历史干净 |
-| 准备提交 PR | 推荐 **rebase** | 保持历史整洁 |
-| 日常开发更新 | 推荐 **merge** | 简单，不易出错 |
+| Scenario | Recommended Method | Rationale |
+|----------|-------------------|----------|
+| Uncommitted local changes | Commit/stash first, then **merge** | Safe, no lost changes |
+| Only clean local commits | **merge** or **rebase** | merge is safer, rebase keeps history clean |
+| Preparing a PR | **rebase** recommended | Keeps history tidy |
+| Routine dev update | **merge** recommended | Simple, less error-prone |
 
-### 第二步：询问用户选择
+### Step 2: Ask User for Confirmation
 
-展示推荐选项后，**必须等待用户确认**后才能执行。
+After presenting the recommended options, **you must wait for user confirmation** before executing.
 
-### 第三步：执行更新
+### Step 3: Execute Update
 
 ```bash
 # 1. Enter project directory
@@ -96,7 +96,7 @@ git remote add upstream https://github.com/openclaw/openclaw.git 2>/dev/null || 
 # 4. Fetch upstream changes
 git fetch upstream
 
-# 5. Update target branch (根据用户选择使用 merge 或 rebase)
+# 5. Update target branch (use merge or rebase based on user's choice)
 git checkout $BRANCH
 # merge: git merge upstream/$BRANCH
 # rebase: git rebase upstream/$BRANCH
@@ -120,9 +120,9 @@ NEW_VERSION=$(openclaw --version)
 echo "✅ Update complete! New version: $NEW_VERSION"
 echo ""
 
-# 10. 询问用户是否重启
-echo "=== Gateway 需要重启以应用更新 ==="
-echo "请确认是否重启? (y/N)"
+# 10. Ask user whether to restart
+echo "=== Gateway needs restart to apply updates ==="
+echo "Confirm restart? (y/N)"
 ```
 
 ## Quick Script
