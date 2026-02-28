@@ -20,3 +20,10 @@ Thumbs.db
 # Temp
 *.tmp
 *.temp
+
+# Twitter Reader State
+twitter-reader/archive.json
+twitter-reader/drafts.json
+twitter-reader/pending_tweets.json
+twitter-reader/seen_ids.json
+twitter-reader/input_urls.txt
