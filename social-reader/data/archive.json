@@ -1,0 +1,16 @@
+[
+  {
+    "tweet_id": "2027708117468025194",
+    "original_url": "https://x.com/realNyarime/status/2027708117468025194",
+    "original_author": "奶昔🥤",
+    "original_username": "realNyarime",
+    "original_text": "这个小红书全自动运行Skills功能很强大，支持 OpenClaw、Codex、CC 等所有支持 Skill 的编辑器，感谢white0dew大佬开源🤗\n核心原理还是通过 Chrome DevTools Protocol (CDP) 控制测试浏览器完成自动化。\n\n目前已经支持的功能有：\n图文笔记自动发布（含话题标签写入）\n视频笔记发布（本地视频 / 视频 URL）\n多账号管理（账号隔离、切换、默认账号）\n浏览器的无头模式 / 有头模式 / 远程 CDP\n搜索相关话题笔记、获取笔记详情\n对指定笔记自动评论\n抓取「评论和@通知」数据\n抓取内容数据表并支持导出 CSV（曝光、观看、点赞等）\n登录状态缓存、复用标签页、随机延迟等稳定性优化\n\n项目地址：\nhttps://github.com/white0dew/XiaohongshuSkills",
+    "commentary": "This is how you actually build a SaaS without building a SaaS.\n\nFounders are obsessed with \"scalable\" platforms. But the real gold is in automating platforms that already have scale.\n\nThis project is a CDP-based automation tool for Xiaohongshu. It handles posting, multi-account …",
+    "char_count": 280,
+    "generated_at": "2026-02-28T23:42:08.062820",
+    "status": "approved",
+    "regenerated": 1,
+    "reviewed_at": "2026-02-28T23:42:50.891869",
+    "archived_at": "2026-02-28T23:43:18.814925"
+  }
+]

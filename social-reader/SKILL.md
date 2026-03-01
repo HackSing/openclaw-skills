@@ -22,10 +22,10 @@ pip install requests
 | `prompt.txt` | LLM system prompt for the Processor node |
 | `sources.json` | List of monitored accounts and fetch intervals (pipeline mode) |
 | `input_urls.txt` | Manually entered post URLs (one per line, `#` for comments) |
-| `seen_ids.json` | Deduplication cache for seen post IDs (pipeline mode only) |
-| `pending_tweets.json` | Queue of unprocessed posts from the Watcher |
-| `drafts.json` | LLM-distilled drafts from the Processor |
-| `archive.json` | Archived history records |
+| `data/seen_ids.json` | Deduplication cache for seen post IDs (pipeline mode only) |
+| `data/pending_tweets.json` | Queue of unprocessed posts from the Watcher |
+| `data/drafts.json` | LLM-distilled drafts from the Processor |
+| `data/archive.json` | Archived history records |
 
 ### Environment Variables (required only for Pipeline Mode Processor)
 
@@ -48,7 +48,7 @@ When a user sends a social media post link and asks you to "read and discuss" or
 ```python
 import sys
 
-skill_dir = r"d:\AIWareTop\Agent\openclaw-skills\social-reader"
+skill_dir = r"d:\AIWareTop\Agent\SoloFounder\.agent\skills\social-reader\scripts"
 if skill_dir not in sys.path:
     sys.path.append(skill_dir)
 
@@ -98,27 +98,27 @@ Use `run_pipeline.py` to chain Watcher → Processor → Action nodes. Suitable 
 
 ### Three Core Nodes
 
-1. **Watcher** (`watcher.py`)
-   - Reads `input_urls.txt` or `sources.json`, deduplicates via `seen_ids.json`, writes new posts to `pending_tweets.json`.
+1. **Watcher** (`scripts/watcher.py`)
+   - Reads `input_urls.txt` or `sources.json`, deduplicates via `data/seen_ids.json`, writes new posts to `data/pending_tweets.json`.
 
-2. **Processor** (`processor.py`)
-   - Reads `pending_tweets.json`, calls LLM to generate commentary, outputs to `drafts.json`.
+2. **Processor** (`scripts/processor.py`)
+   - Reads `data/pending_tweets.json`, calls LLM to generate commentary, outputs to `data/drafts.json`.
    - Requires `LLM_API_KEY` environment variable.
 
-3. **Action** (`notifier.py`)
+3. **Action** (`scripts/notifier.py`)
    - Starts a local HTTP review server (port 18923), opens a browser review page with approve/reject/rewrite/archive controls.
 
 ### CLI Examples
 
 ```bash
 # Full pipeline
-python run_pipeline.py
+python scripts/run_pipeline.py
 
 # Specific URL
-python run_pipeline.py https://x.com/elonmusk/status/123456
+python scripts/run_pipeline.py https://x.com/elonmusk/status/123456
 
 # Single node execution
-python run_pipeline.py --watch-only
-python run_pipeline.py --process-only
-python run_pipeline.py --notify-only
+python scripts/run_pipeline.py --watch-only
+python scripts/run_pipeline.py --process-only
+python scripts/run_pipeline.py --notify-only
 ```
