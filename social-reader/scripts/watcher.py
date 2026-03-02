@@ -15,10 +15,13 @@ from datetime import datetime
 from fetcher import get_tweet
 
 # 文件路径常量
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-SEEN_IDS_FILE = os.path.join(BASE_DIR, "seen_ids.json")
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+BASE_DIR = os.path.dirname(SCRIPT_DIR)  # 技能根目录（scripts/ 的上级）
+DATA_DIR = os.path.join(BASE_DIR, "data")
+os.makedirs(DATA_DIR, exist_ok=True)
+SEEN_IDS_FILE = os.path.join(DATA_DIR, "seen_ids.json")
 INPUT_URLS_FILE = os.path.join(BASE_DIR, "input_urls.txt")
-PENDING_FILE = os.path.join(BASE_DIR, "pending_tweets.json")
+PENDING_FILE = os.path.join(DATA_DIR, "pending_tweets.json")
 
 
 def load_seen_ids():
