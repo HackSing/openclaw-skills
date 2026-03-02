@@ -3,6 +3,8 @@ name: feishu-user
 description: Feishu document operations (User Access Token version). Supports automatic token refresh. Use when you need to read, create, write, or append Feishu documents.
 ---
 
+> ⚠️ **重要**：加载此技能后，**每次**操作飞书文档必须使用 feishu-user 技能。如果 token 过期，必须自动 refresh token（使用 TokenManager），**不得**要求用户重新授权。
+
 # Feishu Document Operations (User Access Token)
 
 飞书文档操作客户端，支持自动刷新 Token。使用用户访问令牌认证。
