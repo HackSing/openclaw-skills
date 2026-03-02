@@ -199,6 +199,21 @@ append_document("doc_token", "## More", manager=manager)
 
 1. **删除块 API 不支持** - 飞书文档 API 不支持删除单个块，请使用 `delete_doc()` 删除整个文档
 2. **追加内容格式** - payload 必须使用 `block_type: 2` 和 `text.elements` 结构
+3. **提取块文本的正确方式** - 常见错误是 `block.get('heading1', {}).get('text')`，正确方式是：
+   - 先获取块详情 API: `GET /documents/{doc_token}/blocks/{block_id}`
+   - 从返回的 `block` 对象中提取：
+     - heading1/heading2/heading3: `block.get('text', {}).get('elements')`
+     - paragraph: `block.get('paragraph', {}).get('elements')`
+     - bullet: `block.get('bullet', {}).get('elements')`
+   - 然后遍历 elements 数组，从每个 `text_run` 中提取 `content`
+   ```python
+   # 正确示例
+   block = client.get_block(doc_token, block_id)
+   text_obj = block.get('heading1', {}) or block.get('paragraph', {})
+   elements = text_obj.get('elements', [])
+   for elem in elements:
+       content = elem.get('text_run', {}).get('content', '')
+   ```
 
 ---
 

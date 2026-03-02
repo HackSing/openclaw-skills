@@ -126,7 +126,17 @@ def refresh_token(config_dir: str = DEFAULT_CONFIG_DIR):
     }
     
     print("正在刷新 token...")
-    resp = requests.post(url, json=payload)
+    # 刷新 token 需要在 headers 中带上 app_id 和 app_secret 作为 Basic Auth
+    import base64
+    auth_str = f"{app_id}:{app_secret}"
+    auth_bytes = auth_str.encode('ascii')
+    auth_b64 = base64.b64encode(auth_bytes).decode('ascii')
+    headers = {
+        "Authorization": f"Bearer {refresh_token}",
+        "X-App-id": app_id,
+        "X-App-secret": app_secret
+    }
+    resp = requests.post(url, json=payload, headers=headers)
     data = resp.json()
     
     if data.get("code") != 0:
