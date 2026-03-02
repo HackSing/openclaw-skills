@@ -1,11 +1,11 @@
 ---
 name: feishu-user
-description: Feishu document operations (User Access Token version). Use user access token for authentication. When you need to read, create, write, or append Feishu documents.
+description: Feishu document operations (User Access Token version). Supports automatic token refresh. Use when you need to read, create, write, or append Feishu documents.
 ---
 
-# Feishishu document operations using useru User
+# Feishu Document Operations (User Access Token)
 
-Fe access token authentication. Call Feishu Open API directly via REST API.
+飞书文档操作客户端，支持自动刷新 Token。使用用户访问令牌认证。
 
 ## Install Dependencies
 
@@ -13,12 +13,19 @@ Fe access token authentication. Call Feishu Open API directly via REST API.
 pip install requests
 ```
 
-## Quick Start
+## Quick Start (Recommended: Auto Refresh)
 
 ```python
-from feishu_client import FeishuClient
+from feishu_client import FeishuClient, load_token_manager
 
-# Initialize client
+# 方式1: 使用 TokenManager 自动刷新 (推荐)
+manager = load_token_manager("YOUR_APP_ID", "YOUR_APP_SECRET")
+client = FeishuClient(manager=manager)
+
+# 读取文档 (如果 token 过期会自动刷新)
+content = client.read_doc("doc_token")
+
+# 方式2: 手动传入 token
 client = FeishuClient(user_access_token="u-xxx")
 ```
 
@@ -26,77 +33,106 @@ client = FeishuClient(user_access_token="u-xxx")
 
 ### Step 1: Get App Credentials from Feishu Open Platform
 
-Prepare the following:
-- **APP_ID** - App ID (from Feishu Open Platform app settings)
-- **APP_SECRET** - App Secret (from Feishu Open Platform app settings)
-- **REDIRECT_URI** - Authorization callback URL
+Prepare:
+- **APP_ID** - App ID (飞书开放平台应用设置)
+- **APP_SECRET** - App Secret (飞书开放平台应用设置)
+- **REDIRECT_URI** - 授权回调地址
 
-Enable these permissions:
-- `docx:document` - Document operations
-- `drive:drive.search:readonly` - Cloud drive search
-- `search:docs:read` - Document search
-- `space:document:delete` - Delete documents (new!)
+Enable permissions:
+- `docx:document` - 文档操作
+- `drive:drive.search:readonly` - 云盘搜索
+- `search:docs:read` - 文档搜索
 
 ### Step 2: Generate Authorization URL
 
-```
-https://accounts.feishu.cn/open-apis/authen/v1/authorize?client_id={YOUR_APP_ID}&response_type=code&redirect_uri={YOUR_REDIRECT_URI}&scope=docx%3Adocument%20drive%3Adrive.search%3Areadonly%20search%3Adocs%3Aread
+```bash
+python feishu_token.py --app-id YOUR_APP_ID --app-secret YOUR_SECRET --url
 ```
 
 ### Step 3: Exchange for Token
 
+授权后在回调地址拿到 code，然后：
+
 ```bash
-curl -X POST "https://open.feishu.cn/open-apis/authen/v1/access_token" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "grant_type": "authorization_code",
-    "code": "{YOUR_CODE}",
-    "app_id": "{YOUR_APP_ID}",
-    "app_secret": "{YOUR_APP_SECRET}"
-  }'
+python feishu_token.py --app-id YOUR_APP_ID --app-secret YOUR_SECRET --code YOUR_CODE
 ```
 
-The returned `access_token` is your `user_access_token`.
+Token 会自动保存到 `~/.config/claw-feishu-user/config.json`
+
+---
+
+## Auto Refresh (推荐)
+
+### 为什么需要自动刷新？
+
+用户 access_token 有效期为 2 小时，过期后 API 会返回错误码 `99991663`。
+
+使用 `TokenManager` 可以在 token 过期时自动刷新，无需手动处理。
+
+### 使用方法
+
+```python
+from feishu_client import FeishuClient, load_token_manager
+
+# 加载 TokenManager (会自动读取配置中的 app_id 和 app_secret)
+manager = load_token_manager("YOUR_APP_ID", "YOUR_APP_SECRET")
+
+# 创建客户端
+client = FeishuClient(manager=manager)
+
+# 使用 - 如果 token 过期会自动刷新并重试
+content = client.read_doc("doc_token")
+client.write_doc("doc_token", "# New Content")
+client.append_doc("doc_token", "## More content")
+```
+
+### 手动刷新 Token
+
+```bash
+# 自动从配置读取并刷新
+python feishu_token.py --refresh
+
+# 或指定参数
+python feishu_token.py --app-id YOUR_APP_ID --app-secret YOUR_SECRET --refresh
+```
 
 ---
 
 ## Usage Examples
 
 ```python
-from feishu_client import FeishuClient
+from feishu_client import FeishuClient, load_token_manager
 
-# Initialize
-client = FeishuClient(user_access_token="u-xxx")
+# 初始化 (推荐使用 TokenManager)
+manager = load_token_manager("cli_xxx", "secret_xxx")
+client = FeishuClient(manager=manager)
 
-# Read document
+# 读取文档
 content = client.read_doc("doc_token")
 print(content)
 
-# Create document
+# 创建文档
 new_token = client.create_doc("My New Document")
 print(f"New document: {new_token}")
 
-# Write document
+# 写入文档
 client.write_doc("doc_token", "# Title\n\nContent")
 
-# Append content
+# 追加内容
 client.append_doc("doc_token", "## New Section\n\nMore content")
 
-# List all blocks
+# 列出所有块
 blocks = client.list_blocks("doc_token")
 for block in blocks:
     print(block)
 
-# Get specific block
+# 获取指定块
 block = client.get_block("doc_token", "block_id")
 
-# Update block
+# 更新块
 client.update_block("doc_token", "block_id", "New content")
 
-# Delete block
-# client.delete_block("doc_token", "block_id")  # 不支持
-
-# Delete entire document (new!)
+# 删除整个文档
 client.delete_doc("doc_token")
 ```
 
@@ -104,22 +140,23 @@ client.delete_doc("doc_token")
 
 ## Convenience Functions
 
-Don't want to create a client? Use functions directly:
-
 ```python
-from feishu_client import read_document, create_document, write_document, append_document
+from feishu_client import read_document, create_document, write_document, append_document, load_token_manager
 
-# Read
-content = read_document("doc_token", user_access_token="u-xxx")
+# 使用 TokenManager (推荐)
+manager = load_token_manager("cli_xxx", "secret_xxx")
 
-# Create
-new_token = create_document("Title", user_access_token="u-xxx")
+# 读取
+content = read_document("doc_token", manager=manager)
 
-# Write
-write_document("doc_token", "# Content", user_access_token="u-xxx")
+# 创建
+new_token = create_document("Title", manager=manager)
 
-# Append
-append_document("doc_token", "## More", user_access_token="u-xxx")
+# 写入
+write_document("doc_token", "# Content", manager=manager)
+
+# 追加
+append_document("doc_token", "## More", manager=manager)
 ```
 
 ---
@@ -130,29 +167,38 @@ append_document("doc_token", "## More", user_access_token="u-xxx")
 
 | Method | Description |
 |--------|-------------|
-| `read_doc(doc_token)` | Read document content |
-| `create_doc(title, folder_token)` | Create new document |
-| `write_doc(doc_token, content)` | Write document (overwrite) |
-| `append_doc(doc_token, content)` | Append content to end |
-| `list_blocks(doc_token)` | List all blocks |
-| `get_block(doc_token, block_id)` | Get specific block |
-| `update_block(doc_token, block_id, content)` | Update block content (not supported) |
-| `delete_block(doc_token, block_id)` | Delete block (not supported) |
-| `delete_doc(doc_token)` | Delete entire document (new!) |
+| `read_doc(doc_token)` | 读取文档内容 |
+| `create_doc(title, folder_token)` | 创建新文档 |
+| `write_doc(doc_token, content)` | 写入文档 (覆盖) |
+| `append_doc(doc_token, content)` | 追加内容到末尾 |
+| `list_blocks(doc_token)` | 列出所有块 |
+| `get_block(doc_token, block_id)` | 获取指定块 |
+| `update_block(doc_token, block_id, content)` | 更新块内容 |
+| `delete_block(doc_token, block_id)` | 删除块 (不支持) |
+| `delete_doc(doc_token)` | 删除整个文档 |
+
+### TokenManager
+
+| Method | Description |
+|--------|-------------|
+| `load_token_manager(app_id, app_secret)` | 创建 TokenManager |
+| `get_token()` | 获取当前 token |
+| `refresh_access_token()` | 刷新 token |
+| `authorize_with_code(code)` | 使用授权码获取 token |
 
 ---
 
 ## Notes
 
-1. `user_access_token` has an expiration time, needs periodic refresh
-2. The `scope` in authorization URL must be enabled in Feishu Open Platform
-3. This skill accesses personal cloud documents using user identity
-4. Deleting documents requires `space:document:delete` permission
+1. **Token 过期处理**: 使用 `TokenManager` 会在 token 过期时自动刷新
+2. **配置保存**: token 保存在 `~/.config/claw-feishu-user/config.json`
+3. **权限要求**: 授权 URL 中的 scope 必须在飞书开放平台启用
+4. **删除权限**: 删除文档需要 `space:document:delete` 权限
 
 ## Known Issues
 
 1. **删除块 API 不支持** - 飞书文档 API 不支持删除单个块，请使用 `delete_doc()` 删除整个文档
-2. **追加内容格式必须正确** - payload 必须使用 `block_type: 2` 和 `text.elements` 结构
+2. **追加内容格式** - payload 必须使用 `block_type: 2` 和 `text.elements` 结构
 
 ---
 
@@ -163,49 +209,30 @@ append_document("doc_token", "## More", user_access_token="u-xxx")
 
 ---
 
-## Token Auto Refresh
+## 更新文档流程
 
-Use `feishu_token.py` script for automatic token refresh.
-
-### Install Dependencies
-
-```bash
-pip install requests
-```
-
-### First Authorization
-
-```bash
-# 1. Generate authorization URL
-python feishu_token.py --app-id YOUR_APP_ID --app-secret YOUR_SECRET --redirect-uri YOUR_REDIRECT_URI --url
-```
-
-After user authorizes, will callback to `YOUR_REDIRECT_URI?code=XXX`
-
-```bash
-# 2. Use authorization code to get token
-python feishu_token.py --app-id YOUR_APP_ID --app-secret YOUR_SECRET --code AUTH_CODE
-```
-
-Token is automatically saved to `~/.config/claw-feishu-user/config.json`
-
-### Refresh Token
-
-```bash
-python feishu_token.py --app-id YOUR_APP_ID --app-secret YOUR_SECRET --refresh
-```
-
-### In Code
+由于飞书文档 API 不支持直接更新/删除块，推荐使用"删除+新建"流程：
 
 ```python
-import json
-import os
+from feishu_client import FeishuClient, load_token_manager
 
-# Read cached token
-config_path = os.path.expanduser("~/.config/claw-feishu-user/config.json")
-with open(config_path) as f:
-    config = json.load(f)
+manager = load_token_manager("cli_xxx", "secret_xxx")
+client = FeishuClient(manager=manager)
 
-# Use token
-client = FeishuClient(user_access_token=config["access_token"])
+# 1. 删除旧文档
+old_token = "HUZNdVJZJoDyaMx0VGOczm7snF6"
+client.delete_doc(old_token)
+
+# 2. 创建新文档
+new_token = client.create_doc("New Title")
+
+# 3. 写入新内容
+new_content = """# 新标题
+
+新内容..."""
+client.write_doc(new_token, new_content)
+
+print(f"新文档: https://feishu.cn/docx/{new_token}")
 ```
+
+**注意**：删除文档需要 `space:document:delete` 权限

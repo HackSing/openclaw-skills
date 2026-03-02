@@ -1,6 +1,8 @@
 ---
 name: safe-update
 description: Update OpenClaw from source code. Supports custom project path and branch. Includes pulling latest branch, rebasing, building and installing, restarting service. Triggered when user asks to update OpenClaw, sync source, rebase branch, or rebuild.
+version: 1.2.0
+updated: 2026-03-02
 ---
 
 # Safe Update
@@ -42,30 +44,71 @@ export DRY_RUN="true"
 ./update.sh --dir /path/to/openclaw --branch your-branch
 ```
 
-## Workflow
+## 更新流程（必须遵守）
 
-### Step 1: Analyze Current State (Must Run First)
+### 【第一步】获取更新内容
 
-Before executing any update, check:
-1. Whether the current branch has uncommitted changes
-2. Whether the current branch has local modifications
-3. Whether upstream has new commits
-4. Recommend the most appropriate update strategy based on the situation
+1. 获取 upstream 更新：
+   ```bash
+   git fetch upstream main
+   git log --oneline HEAD..upstream/main | head -30
+   ```
 
-**Recommended Strategy:**
+2. 用人话解释：
+   - 列出 feat（新增功能）和 fix（重要修复）
+   - 忽略测试/文档/重构
+   - 简单直白描述
 
-| Scenario | Recommended Method | Rationale |
-|----------|-------------------|----------|
-| Uncommitted local changes | Commit/stash first, then **merge** | Safe, no lost changes |
-| Only clean local commits | **merge** or **rebase** | merge is safer, rebase keeps history clean |
-| Preparing a PR | **rebase** recommended | Keeps history tidy |
-| Routine dev update | **merge** recommended | Simple, less error-prone |
+3. **必须等用户确认**才能执行下一步
 
-### Step 2: Ask User for Confirmation
+### 【第二步】执行更新
 
-After presenting the recommended options, **you must wait for user confirmation** before executing.
+只有用户同意后，才执行：拉取 → 构建 → 安装 → 重启 → **测试验证**
 
-### Step 3: Execute Update
+---
+
+### 【第三步】测试验证（必须执行）
+
+**每次代码改动后都必须进行测试，确保功能正常：**
+
+1. **UI 测试**：
+   - 访问 http://127.0.0.1:18789/ 验证页面能正常加载
+   - 打开浏览器 F12 控制台，确认无 JS 报错
+
+2. **对话测试**：
+   - 发送一条简单消息，验证能正常回复
+
+3. **如发现问题**：
+   - 立即回退或修复
+   - 汇报问题给用户
+   - 不能跳过或忽略测试结果
+
+---
+
+## 旧版 Workflow
+
+### 第一步：分析当前状态（必须先执行）
+
+在执行任何更新前，先检查：
+1. 当前分支是否有未提交的更改
+2. 当前分支是否有本地修改
+3. upstream 是否有新提交
+4. 根据情况推荐最合适的更新方式
+
+**推荐策略：**
+
+| 情况 | 推荐方式 | 理由 |
+|------|---------|------|
+| 有未提交的本地修改 | 先 commit/stash，然后 **merge** | 安全，不丢失修改 |
+| 本地只有干净的提交 | 可以选 **merge** 或 **rebase** | merge 安全，rebase 历史干净 |
+| 准备提交 PR | 推荐 **rebase** | 保持历史整洁 |
+| 日常开发更新 | 推荐 **merge** | 简单，不易出错 |
+
+### 第二步：询问用户选择
+
+展示推荐选项后，**必须等待用户确认**后才能执行。
+
+### 第三步：执行更新
 
 ```bash
 # 1. Enter project directory
@@ -96,7 +139,7 @@ git remote add upstream https://github.com/openclaw/openclaw.git 2>/dev/null || 
 # 4. Fetch upstream changes
 git fetch upstream
 
-# 5. Update target branch (use merge or rebase based on user's choice)
+# 5. Update target branch (根据用户选择使用 merge 或 rebase)
 git checkout $BRANCH
 # merge: git merge upstream/$BRANCH
 # rebase: git rebase upstream/$BRANCH
@@ -120,9 +163,23 @@ NEW_VERSION=$(openclaw --version)
 echo "✅ Update complete! New version: $NEW_VERSION"
 echo ""
 
-# 10. Ask user whether to restart
-echo "=== Gateway needs restart to apply updates ==="
-echo "Confirm restart? (y/N)"
+# 10. 测试验证（必须执行）
+echo "=== 执行测试验证 ==="
+
+# 10.1 验证 UI 能正常加载
+echo "检查 UI..."
+curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:18789/
+if [ $? -eq 0 ]; then
+  echo "✅ UI 正常"
+else
+  echo "❌ UI 加载失败"
+fi
+
+# 10.2 验证 Gateway 状态
+openclaw status | head -5
+
+echo ""
+echo "=== 更新完成 ==="
 ```
 
 ## Quick Script
@@ -171,6 +228,7 @@ Options:
 - **Service reinstall** - will update version in systemd unit file
 - **User confirms restart** - Gateway will not restart until you confirm
 - **Backup first** - always backup before updating!
+- **必须测试** - 每次构建后都要验证 UI 和对话能正常运行，不能跳过！
 
 ## Troubleshooting
 
