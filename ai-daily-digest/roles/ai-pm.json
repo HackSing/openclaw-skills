@@ -1,0 +1,42 @@
+{
+  "id": "ai-pm",
+  "name": "AI 产品经理",
+  "description": "关注 AI 产品动态、开源项目和产品策略",
+  "feeds": [
+    { "name": "simonwillison.net", "xmlUrl": "https://simonwillison.net/atom/everything/", "htmlUrl": "https://simonwillison.net" },
+    { "name": "Lenny's Newsletter", "xmlUrl": "https://www.lennysnewsletter.com/feed", "htmlUrl": "https://www.lennysnewsletter.com" },
+    { "name": "Stratechery", "xmlUrl": "https://stratechery.com/feed/", "htmlUrl": "https://stratechery.com" },
+    { "name": "The Verge AI", "xmlUrl": "https://www.theverge.com/rss/ai-artificial-intelligence/index.xml", "htmlUrl": "https://www.theverge.com/ai-artificial-intelligence" },
+    { "name": "a16z", "xmlUrl": "https://a16z.com/feed/", "htmlUrl": "https://a16z.com" },
+    { "name": "OpenAI Blog", "xmlUrl": "https://openai.com/blog/rss.xml", "htmlUrl": "https://openai.com/blog" },
+    { "name": "Anthropic News", "xmlUrl": "https://www.anthropic.com/rss.xml", "htmlUrl": "https://www.anthropic.com" },
+    { "name": "Google AI Blog", "xmlUrl": "https://blog.google/technology/ai/rss/", "htmlUrl": "https://blog.google/technology/ai/" },
+    { "name": "Hugging Face Blog", "xmlUrl": "https://huggingface.co/blog/feed.xml", "htmlUrl": "https://huggingface.co/blog" },
+    { "name": "Product Hunt", "xmlUrl": "https://www.producthunt.com/feed", "htmlUrl": "https://www.producthunt.com" },
+    { "name": "TechCrunch AI", "xmlUrl": "https://techcrunch.com/category/artificial-intelligence/feed/", "htmlUrl": "https://techcrunch.com/category/artificial-intelligence/" },
+    { "name": "MIT Technology Review", "xmlUrl": "https://www.technologyreview.com/feed/", "htmlUrl": "https://www.technologyreview.com" },
+    { "name": "Benedict Evans", "xmlUrl": "https://www.ben-evans.com/benedictevans?format=rss", "htmlUrl": "https://www.ben-evans.com" }
+  ],
+  "categories": {
+    "ai-product":  { "emoji": "🤖", "label": "AI 产品" },
+    "open-source": { "emoji": "📦", "label": "开源项目" },
+    "strategy":    { "emoji": "📐", "label": "产品策略" },
+    "market":      { "emoji": "📈", "label": "市场动态" },
+    "opinion":     { "emoji": "💡", "label": "观点" },
+    "other":       { "emoji": "📝", "label": "其他" }
+  },
+  "scoring": {
+    "persona": "你是一个 AI 产品经理的内容助手，正在为一位关注 AI 产品动态的产品经理筛选文章",
+    "relevanceDescription": "对 AI 产品经理日常工作和决策的价值",
+    "relevanceLevels": {
+      "high": "AI 新产品发布、重大版本更新、产品策略深度分析、用户增长案例、竞品动态",
+      "medium": "通用 AI 技术进展、行业趋势报告、开源项目发布",
+      "low": "纯底层技术细节、与产品决策无关的工程文章、非 AI 领域内容"
+    }
+  },
+  "branding": {
+    "title": "AI 产品日报",
+    "subtitle": "AI 产品经理的每日必读",
+    "highlightsLabel": "今日 AI 产品圈动态"
+  }
+}
