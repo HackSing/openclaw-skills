@@ -1,8 +1,8 @@
 ---
 name: safe-update
 description: Update OpenClaw safely with auto-detected dual modes. Ordinary installs follow the official recommended update path, while local source forks use a developer tarball workflow with backup and rollback metadata.
-version: 1.5.1
-updated: 2026-03-07
+version: 1.5.2
+updated: 2026-03-08
 ---
 
 # Safe Update
@@ -135,15 +135,19 @@ This is not the default official update path, but it is useful when local develo
 
 脚本会结合以下证据判断适合哪种模式：
 
+- `--dir` 指向的是否是有效 OpenClaw 源码仓库
+- 仓库 `package.json` 是否就是 `openclaw`
+- 仓库 remote 是否指向 OpenClaw 官方仓库或已知 fork
 - 当前 git 分支是否为 `main`
 - 是否存在未提交修改
 - 是否存在相对 `origin/<branch>` 的本地未推送提交
+- 是否存在相对 `origin/<branch>` 的上游新提交
 - 当前全局安装目录是否仍是 symlink
 
 判定结果：
 
-- 更像普通安装环境时，选 `official`
-- 更像本地开发或 fork 环境时，选 `developer`
+- 如果存在明确的 OpenClaw 源码维护仓库，默认优先选 `developer`
+- 只有更像纯 package 运行时用户时，才选 `official`
 
 也支持人工强制指定：
 
@@ -160,15 +164,19 @@ Default usage:
 
 The script chooses a mode using signals such as:
 
+- Whether `--dir` points at a valid OpenClaw source repository
+- Whether that repo's `package.json` name is `openclaw`
+- Whether repo remotes point to the official OpenClaw repo or a known fork
 - Whether the current git branch is `main`
 - Whether there are uncommitted changes
 - Whether there are unpushed commits relative to `origin/<branch>`
+- Whether upstream already has newer commits
 - Whether the global install directory is still a symlink
 
 Decision rule:
 
-- If the environment looks like a normal install, choose `official`
-- If it looks like a local development or fork environment, choose `developer`
+- If the environment clearly looks like a maintained OpenClaw source repo, choose `developer`
+- Only choose `official` when it looks like a package-runtime-only user environment
 
 You can also force a mode manually:
 
@@ -281,9 +289,11 @@ The skill also tries to capture:
 ./update.sh --dir /path/to/openclaw --branch main --install-mode auto
 ```
 
+如果这个目录是你实际维护和发布 OpenClaw 的源码仓库，`auto` 现在会优先按源码同步链路处理，而不是误落到纯 npm 运行时更新。
+
 ### 明确知道自己是普通安装用户
 
-如果你只是正常安装 OpenClaw，没有维护本地源码分支，可以直接使用：
+如果你只是正常安装 OpenClaw，没有维护本地源码仓库，也不需要同步最新源码，只想更新当前已安装运行时，可以直接使用：
 
 ```bash
 ./update.sh --install-mode official
@@ -291,7 +301,7 @@ The skill also tries to capture:
 
 ### 明确知道自己是本地源码开发用户
 
-如果你维护本地 fork、功能分支或定制代码，使用：
+如果你维护本地 fork、功能分支或官方源码主仓，并希望先同步最新源码再发布运行时，使用：
 
 ```bash
 ./update.sh --dir /path/to/openclaw --branch feat/your-branch --mode rebase --upstream-ref upstream/main --install-mode developer

@@ -27,6 +27,9 @@ PREVIOUS_STATUS_SUMMARY=""
 PREVIOUS_PACKAGE_VERSION=""
 PREVIOUS_PACKAGE_NAME=""
 HAS_UPSTREAM_REMOTE="false"
+REPO_LOOKS_LIKE_OPENCLAW="false"
+REPO_REMOTE_MATCHED="false"
+AUTO_DETECTION_REASON=""
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -237,6 +240,20 @@ PY
     PREVIOUS_STATUS_SUMMARY="$(git status --short | sed -n '1,30p' || true)"
     PREVIOUS_PACKAGE_NAME="$(node -p "require('$PROJECT_DIR/package.json').name" 2>/dev/null || true)"
     PREVIOUS_PACKAGE_VERSION="$(node -p "require('$PROJECT_DIR/package.json').version" 2>/dev/null || true)"
+    if [ "$PREVIOUS_PACKAGE_NAME" = "openclaw" ]; then
+        REPO_LOOKS_LIKE_OPENCLAW="true"
+    else
+        REPO_LOOKS_LIKE_OPENCLAW="false"
+    fi
+
+    local remote_urls=""
+    remote_urls="$(git remote -v 2>/dev/null || true)"
+    if grep -Eq 'github\.com[:/](openclaw/openclaw|HackSing/openclaw)(\.git)?' <<<"$remote_urls"; then
+        REPO_REMOTE_MATCHED="true"
+    else
+        REPO_REMOTE_MATCHED="false"
+    fi
+
     if git remote get-url upstream >/dev/null 2>&1; then
         HAS_UPSTREAM_REMOTE="true"
     else
@@ -270,7 +287,7 @@ select_install_mode() {
         return
     fi
 
-    local branch current_branch ahead_count has_dirty has_unpushed install_is_symlink
+    local branch current_branch ahead_count behind_count has_dirty has_unpushed has_upstream_updates install_is_symlink
     current_branch="$(git rev-parse --abbrev-ref HEAD)"
     branch="$BRANCH"
     if [ -z "$branch" ]; then
@@ -279,7 +296,9 @@ select_install_mode() {
 
     has_dirty="false"
     has_unpushed="false"
+    has_upstream_updates="false"
     install_is_symlink="false"
+    AUTO_DETECTION_REASON="default-to-official"
 
     if [ -n "$(git status --porcelain)" ]; then
         has_dirty="true"
@@ -287,8 +306,12 @@ select_install_mode() {
 
     if git rev-parse --verify "origin/$branch" >/dev/null 2>&1; then
         ahead_count="$(git rev-list --count "origin/$branch..HEAD" 2>/dev/null || echo 0)"
+        behind_count="$(git rev-list --count "HEAD..origin/$branch" 2>/dev/null || echo 0)"
         if [ "${ahead_count:-0}" -gt 0 ]; then
             has_unpushed="true"
+        fi
+        if [ "${behind_count:-0}" -gt 0 ]; then
+            has_upstream_updates="true"
         fi
     fi
 
@@ -296,14 +319,20 @@ select_install_mode() {
         install_is_symlink="true"
     fi
 
-    if [ "$current_branch" != "main" ] || [ "$has_dirty" = "true" ] || [ "$has_unpushed" = "true" ] || [ "$install_is_symlink" = "true" ]; then
+    if [ "$REPO_LOOKS_LIKE_OPENCLAW" = "true" ] && [ "$REPO_REMOTE_MATCHED" = "true" ]; then
         SELECTED_INSTALL_MODE="developer"
+        AUTO_DETECTION_REASON="source-repo-maintainer"
+    elif [ "$current_branch" != "main" ] || [ "$has_dirty" = "true" ] || [ "$has_unpushed" = "true" ] || [ "$install_is_symlink" = "true" ]; then
+        SELECTED_INSTALL_MODE="developer"
+        AUTO_DETECTION_REASON="customized-or-linked-runtime"
     else
         SELECTED_INSTALL_MODE="official"
+        AUTO_DETECTION_REASON="package-runtime"
     fi
 
     log_info "Auto-detected install mode: $SELECTED_INSTALL_MODE"
-    log_info "Detection evidence: branch=$current_branch dirty=$has_dirty unpushed=$has_unpushed symlinkInstall=$install_is_symlink"
+    log_info "Detection reason: $AUTO_DETECTION_REASON"
+    log_info "Detection evidence: branch=$current_branch dirty=$has_dirty unpushed=$has_unpushed upstreamUpdates=$has_upstream_updates symlinkInstall=$install_is_symlink repoOpenClaw=$REPO_LOOKS_LIKE_OPENCLAW remoteMatched=$REPO_REMOTE_MATCHED"
 }
 
 prepare_backup_dir() {
@@ -392,25 +421,49 @@ backup_state() {
     if [ "$DRY_RUN" = "true" ]; then
         echo -e "${YELLOW}[DRY-RUN]${NC} Would write file: $BACKUP_DIR/metadata.json"
     else
-        python3 - <<PY > "$BACKUP_DIR/metadata.json"
+        TIMESTAMP_JSON="$TIMESTAMP" \
+        PROJECT_DIR_JSON="$PROJECT_DIR" \
+        SELECTED_INSTALL_MODE_JSON="$SELECTED_INSTALL_MODE" \
+        INSTALL_MODE_JSON="$INSTALL_MODE" \
+        UPDATE_MODE_JSON="$UPDATE_MODE" \
+        UPSTREAM_REF_JSON="$UPSTREAM_REF" \
+        BRANCH_JSON="$BRANCH" \
+        PREVIOUS_HEAD_JSON="$PREVIOUS_HEAD" \
+        PREVIOUS_BRANCH_JSON="$PREVIOUS_BRANCH" \
+        PREVIOUS_GLOBAL_VERSION_JSON="$PREVIOUS_GLOBAL_VERSION" \
+        PREVIOUS_PACKAGE_NAME_JSON="$PREVIOUS_PACKAGE_NAME" \
+        PREVIOUS_PACKAGE_VERSION_JSON="$PREVIOUS_PACKAGE_VERSION" \
+        PREVIOUS_GATEWAY_COMMAND_JSON="$PREVIOUS_GATEWAY_COMMAND" \
+        PREVIOUS_REALPATH_JSON="$PREVIOUS_REALPATH" \
+        GLOBAL_INSTALL_DIR_JSON="$GLOBAL_INSTALL_DIR" \
+        HAS_UPSTREAM_REMOTE_JSON="$HAS_UPSTREAM_REMOTE" \
+        REPO_LOOKS_LIKE_OPENCLAW_JSON="$REPO_LOOKS_LIKE_OPENCLAW" \
+        REPO_REMOTE_MATCHED_JSON="$REPO_REMOTE_MATCHED" \
+        AUTO_DETECTION_REASON_JSON="$AUTO_DETECTION_REASON" \
+        python3 - <<'PY' > "$BACKUP_DIR/metadata.json"
 import json
+import os
+
 print(json.dumps({
-  "timestamp": ${TIMESTAMP@Q},
-  "projectDir": ${PROJECT_DIR@Q},
-  "selectedInstallMode": ${SELECTED_INSTALL_MODE@Q},
-  "requestedInstallMode": ${INSTALL_MODE@Q},
-  "gitUpdateMode": ${UPDATE_MODE@Q},
-  "upstreamRef": ${UPSTREAM_REF@Q},
-  "branch": ${BRANCH@Q},
-  "previousHead": ${PREVIOUS_HEAD@Q},
-  "previousBranch": ${PREVIOUS_BRANCH@Q},
-  "previousGlobalVersion": ${PREVIOUS_GLOBAL_VERSION@Q},
-  "previousPackageName": ${PREVIOUS_PACKAGE_NAME@Q},
-  "previousPackageVersion": ${PREVIOUS_PACKAGE_VERSION@Q},
-  "previousGatewayCommand": ${PREVIOUS_GATEWAY_COMMAND@Q},
-  "previousInstallRealpath": ${PREVIOUS_REALPATH@Q},
-  "globalInstallDir": ${GLOBAL_INSTALL_DIR@Q},
-  "hasUpstreamRemote": ${HAS_UPSTREAM_REMOTE@Q},
+  "timestamp": os.environ.get("TIMESTAMP_JSON", ""),
+  "projectDir": os.environ.get("PROJECT_DIR_JSON", ""),
+  "selectedInstallMode": os.environ.get("SELECTED_INSTALL_MODE_JSON", ""),
+  "requestedInstallMode": os.environ.get("INSTALL_MODE_JSON", ""),
+  "gitUpdateMode": os.environ.get("UPDATE_MODE_JSON", ""),
+  "upstreamRef": os.environ.get("UPSTREAM_REF_JSON", ""),
+  "branch": os.environ.get("BRANCH_JSON", ""),
+  "previousHead": os.environ.get("PREVIOUS_HEAD_JSON", ""),
+  "previousBranch": os.environ.get("PREVIOUS_BRANCH_JSON", ""),
+  "previousGlobalVersion": os.environ.get("PREVIOUS_GLOBAL_VERSION_JSON", ""),
+  "previousPackageName": os.environ.get("PREVIOUS_PACKAGE_NAME_JSON", ""),
+  "previousPackageVersion": os.environ.get("PREVIOUS_PACKAGE_VERSION_JSON", ""),
+  "previousGatewayCommand": os.environ.get("PREVIOUS_GATEWAY_COMMAND_JSON", ""),
+  "previousInstallRealpath": os.environ.get("PREVIOUS_REALPATH_JSON", ""),
+  "globalInstallDir": os.environ.get("GLOBAL_INSTALL_DIR_JSON", ""),
+  "hasUpstreamRemote": os.environ.get("HAS_UPSTREAM_REMOTE_JSON", ""),
+  "repoLooksLikeOpenClaw": os.environ.get("REPO_LOOKS_LIKE_OPENCLAW_JSON", ""),
+  "repoRemoteMatched": os.environ.get("REPO_REMOTE_MATCHED_JSON", ""),
+  "autoDetectionReason": os.environ.get("AUTO_DETECTION_REASON_JSON", ""),
 }, indent=2, ensure_ascii=False))
 PY
     fi
