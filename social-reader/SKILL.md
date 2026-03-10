@@ -43,6 +43,17 @@ When a user sends a social media post link and asks you to "read and discuss" or
 
 `run_pipeline.py` triggers deduplication cache, fixed LLM distillation, and browser popups, which are unsuitable for interactive scenarios.
 
+### Reply Generation Guidelines
+
+When generating replies for the user, follow these principles to maximize engagement, followers, and traffic:
+
+1. **独特观点优先**：不要附和原帖，而是提出一个新角度、反直觉的洞察、或别人没想到的关联。让人看完觉得"这个角度有意思"。
+2. **制造讨论欲**：回复应包含一个可被反驳或补充的观点，让别人忍不住回复你。避免"正确但无聊"的内容。
+3. **提供信息差**：尽量补充原帖没有的事实、数据、案例或因果分析，让你的回复本身有独立价值。
+4. **口语化表达**：用真人说话的方式，不要书面腔。可以幽默但不能只有幽默，底层要有思考。
+5. **避免空洞附和**：禁止"说得对"、"太同意了"、"学到了"这类零信息量回复。每条回复必须有实质内容。
+6. **长度适中**：Twitter 回复 1-3 句话最佳，要精炼有力，不要写成小作文。
+
 ### Usage Example
 
 ```python
