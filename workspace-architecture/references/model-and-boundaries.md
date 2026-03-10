@@ -58,8 +58,15 @@
 - `.learnings/`
 - `reviews/`
 
+在启用自我进化闭环后，Learning 层内部再分成四段：
+- `ERRORS.md`：错误模式
+- `LEARNINGS.md`：纠正经验
+- `pending/rules.json`：待审核规则
+- `pending/archive/`：已处理规则归档
+
 规则：
-- 所有学习先进入候选池
+- 实时纠正可直接写既有学习通道
+- 定时任务发现的候选规则必须先进 pending 队列
 - 不自动写入核心文件
 - 先 review，再晋升
 
@@ -67,15 +74,21 @@
 
 首次接管 workspace 时，应先补齐最小目录骨架，再在骨架内工作。
 
-优先使用：
-- `python3 ./scripts/init_workspace.py <workspace-root>`
+使用：
+- `python3 ~/.openclaw/skills/workspace-architecture/scripts/bootstrap.py init <workspace-root>`
 
 应主动创建的最小目录：
 - `memory/`
 - `.learnings/`
+- `.learnings/pending/`
+- `.learnings/pending/archive/`
 - `context/`
 - `shared-context/`
 - `reviews/`
+
+应主动初始化的最小文件：
+- `.learnings/pending/rules.json`
+- `.learnings/pending/info-sources.json`
 
 边界：
 - 只在当前 agent 的 workspace 根路径内创建
@@ -91,7 +104,9 @@
 1. 执行相关任务前主动回看旧错和旧经验
 2. 执行后把新错误和新经验写回文件系统
 3. 周期性用 heartbeat 检查是否出现重复错误或可晋升经验
-4. 让用户作为外部知识吸收和规则晋升的治理阀门
+4. 用 pending 队列隔离定时学习发现的规则候选
+5. 用 daily-review 审核 pending 规则并决定是否晋升
+6. 让用户作为外部知识吸收和核心规则治理阀门
 
 ## 常见误区
 
@@ -121,6 +136,7 @@
 
 修正：
 - 先写 `.learnings/`
+- 如果来自定时任务发现，先写 `pending/rules.json`
 - 审核后再决定是否进入核心文件
 
 ### 误区五
@@ -151,3 +167,10 @@
 修正：
 - 先确认当前 agent 的 workspace
 - 再读取该 workspace 根里的 `HEARTBEAT.md`
+
+### 误区九
+只创建 cron，不把自我进化机制写回 skill。
+
+修正：
+- skill 正文必须写清 schema、状态机、职责边界和审核链路
+- 否则新 agent 无法稳定复现

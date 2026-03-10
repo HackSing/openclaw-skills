@@ -22,11 +22,13 @@
 - 这是高频重复任务
 - 这是更新、发布、路由、目录结构、技能路径等易错问题
 - 这是复杂排障或多步骤任务
+- 这是 self-evolution、cron、pending 队列或规则晋升相关任务
 
 优先回看：
 - `.learnings/ERRORS.md`
 - `.learnings/LEARNINGS.md`
 - `.learnings/PROMOTION_QUEUE.md`
+- `.learnings/pending/rules.json`
 - 相关 `MEMORY.md`
 - 今天对应的 `memory/YYYY-MM-DD.md`
 - 昨天对应的 `memory/YYYY-MM-DD.md`
@@ -70,12 +72,13 @@
 ### 首次接管 workspace
 处理方式：
 1. 先确认当前 agent 的 workspace 根路径
-2. 优先执行 `python3 ./scripts/init_workspace.py <workspace-root>`
-3. 如需先预览风险，先执行 `python3 ./scripts/init_workspace.py <workspace-root> --dry-run`
-4. 检查 `memory/`、`.learnings/`、`context/`、`shared-context/`、`reviews/` 是否已齐备
-5. 只创建最小可用结构，不预填虚假内容
-6. 已存在文件一律跳过，不覆盖用户已有内容
-7. 再开始后续的读取、记忆、学习与沉淀
+2. 优先执行 `python3 ~/.openclaw/skills/workspace-architecture/scripts/bootstrap.py init <workspace-root>`
+3. 如需先预览风险，先执行 `python3 ~/.openclaw/skills/workspace-architecture/scripts/bootstrap.py init <workspace-root> --dry-run`
+4. 检查 `memory/`、`.learnings/`、`.learnings/pending/`、`context/`、`shared-context/`、`reviews/` 是否已齐备
+5. 检查 `.learnings/pending/rules.json` 与 `.learnings/pending/info-sources.json` 是否已初始化
+6. 只创建最小可用结构，不预填虚假内容
+7. 已存在文件一律跳过，不覆盖用户已有内容
+8. 再开始后续的读取、记忆、学习与沉淀
 
 ### 多个智能体要共享同一批信息
 处理方式：
@@ -101,6 +104,7 @@
 4. 检查是否需要写入 `.learnings/`
 5. 检查是否需要提炼进 `MEMORY.md`
 6. 检查是否存在需要用户确认的外部学习候选
+7. 如果启用了 pending 队列，顺手检查 `rules.json` 是否结构合法、是否存在积压过久的 pending 项
 
 设计原则：
 - 最小可跑通
@@ -115,6 +119,21 @@
 2. 提炼候选摘要、来源、适用场景和潜在收益
 3. 先询问用户是否同意吸收或落地
 4. 用户同意后，再决定写入 `context/`、`.learnings/` 或核心文件
+
+### 维护 pending 规则队列
+处理方式：
+1. 先读取 `references/self-evolution.md`
+2. 检查 `rules.json` 顶层结构和单条 rule schema
+3. 检查 `rules.json` 是否只保留 pending
+4. 检查 archive 是否按天归档
+5. 修改 cron 时优先只改 message 文案，不随意改调度和机制
+
+### 调整 daily-info-update 或 daily-review
+处理方式：
+1. 先核对现有 cron 内容，不要直接执行 run
+2. 先判断是文案收口还是机制重构
+3. 如果只是 schema、source、生命周期歧义，优先只改 message 文案
+4. 改完后做只读复核，确认 schedule、sessionTarget、delivery 未被误改
 
 ## L0 / L1 / L2
 
@@ -138,3 +157,4 @@
 - 方案对比
 - 容易被追问依据的结论
 - 引用了历史错误、长期记忆或外部资料的判断
+- 自我进化机制、规则晋升、cron 审核链路相关判断
