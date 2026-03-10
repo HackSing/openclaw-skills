@@ -17,12 +17,9 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from datetime import datetime
 from urllib.parse import urlparse
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-BASE_DIR = os.path.dirname(SCRIPT_DIR)  # 技能根目录（scripts/ 的上级）
-DATA_DIR = os.path.join(BASE_DIR, "data")
-os.makedirs(DATA_DIR, exist_ok=True)
-DRAFTS_FILE = os.path.join(DATA_DIR, "drafts.json")
-ARCHIVE_FILE = os.path.join(DATA_DIR, "archive.json")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DRAFTS_FILE = os.path.join(BASE_DIR, "drafts.json")
+ARCHIVE_FILE = os.path.join(BASE_DIR, "archive.json")
 SERVER_PORT = 18923
 
 

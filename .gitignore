@@ -21,6 +21,10 @@ Thumbs.db
 *.tmp
 *.temp
 
+# Generated digest output
+output/
+ai-daily-digest/output/
+
 # Social Reader State
 social-reader/archive.json
 social-reader/drafts.json

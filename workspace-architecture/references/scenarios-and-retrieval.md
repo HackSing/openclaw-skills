@@ -1,0 +1,140 @@
+# 检索顺序与典型场景
+
+## 默认检索顺序
+
+复杂任务默认采用以下顺序：
+
+1. 根目录核心文件
+2. `shared-context/`
+3. 目标目录的 `.abstract.md`
+4. 目标目录的 `.overview.md`
+5. 详细正文文件
+6. 外部资料
+
+命中目录后，不要一上来读完整个目录正文。
+
+## 错误回读的触发规则
+
+以下情况在正式执行前，优先检查相关 `.learnings/`、相关 `memory/` 和记忆文件：
+
+- 该领域之前出过错
+- 用户正在纠正你
+- 这是高频重复任务
+- 这是更新、发布、路由、目录结构、技能路径等易错问题
+- 这是复杂排障或多步骤任务
+
+优先回看：
+- `.learnings/ERRORS.md`
+- `.learnings/LEARNINGS.md`
+- `.learnings/PROMOTION_QUEUE.md`
+- 相关 `MEMORY.md`
+- 今天对应的 `memory/YYYY-MM-DD.md`
+- 昨天对应的 `memory/YYYY-MM-DD.md`
+
+如果今天或昨天的 daily memory 文件不存在，必须如实记录文件不存在，不要假装已经读取到内容。
+
+## 典型场景
+
+### 用户发来文章让我学习
+处理方式：
+1. 放进 `context/research/` 或 `context/refs/articles/`
+2. 如果会长期复用，补 `.abstract.md` 和 `.overview.md`
+3. 不直接写进 `MEMORY.md`
+
+### 用户发来 GitHub 仓库让我研究
+处理方式：
+1. 放进 `context/research/` 或 `context/refs/repos/`
+2. 提炼可采纳点
+3. 只有稳定规则才考虑进入 `AGENTS.md` 或 `TOOLS.md`
+
+### 用户纠正我说错了
+处理方式：
+1. 先检查是否已有相关旧错或旧经验
+2. 再给出修正后的回答
+3. 将新经验写到 `.learnings/LEARNINGS.md`
+4. 如果涉及错误模式，也补写 `.learnings/ERRORS.md`
+
+### 命令失败或工具异常
+处理方式：
+1. 先写到 `.learnings/ERRORS.md`
+2. 提炼最小修复路径
+3. 如果是环境级坑点，再考虑补到 `TOOLS.md`
+
+### 无 Git 的工作区修改
+处理方式：
+1. 先确认当前工作区是否存在 `.git`
+2. 如果有 Git，按提交纪律执行
+3. 如果没有 Git，不把 commit 当阻塞
+4. 以文件写入成功、路径正确、产物可用作为完成标准
+
+### 首次接管 workspace
+处理方式：
+1. 先确认当前 agent 的 workspace 根路径
+2. 优先执行 `python3 ./scripts/init_workspace.py <workspace-root>`
+3. 如需先预览风险，先执行 `python3 ./scripts/init_workspace.py <workspace-root> --dry-run`
+4. 检查 `memory/`、`.learnings/`、`context/`、`shared-context/`、`reviews/` 是否已齐备
+5. 只创建最小可用结构，不预填虚假内容
+6. 已存在文件一律跳过，不覆盖用户已有内容
+7. 再开始后续的读取、记忆、学习与沉淀
+
+### 多个智能体要共享同一批信息
+处理方式：
+1. 放进 `shared-context/`
+2. 明确谁写谁读
+3. 遵守 one-writer many-readers
+
+### 重要事故或误操作
+处理方式：
+1. 写入 `memory/incidents/`
+2. 如有长期影响，再提炼进 `MEMORY.md`
+
+### 重要方案取舍
+处理方式：
+1. 写入 `memory/decisions/`
+2. 必要时在项目目录保留项目级决策记录
+
+### heartbeat 自我反思
+处理方式：
+1. 先确认当前 agent 的 workspace 根路径
+2. 读取该 workspace 根里的 `HEARTBEAT.md`
+3. 检查今天是否有新的错误或被纠正
+4. 检查是否需要写入 `.learnings/`
+5. 检查是否需要提炼进 `MEMORY.md`
+6. 检查是否存在需要用户确认的外部学习候选
+
+设计原则：
+- 最小可跑通
+- 不要写复杂
+- 结构化
+- 清晰可执行
+- 给后续扩展留空间
+
+### 主动外部学习
+处理方式：
+1. 搜索或收集可能有价值的外部资料
+2. 提炼候选摘要、来源、适用场景和潜在收益
+3. 先询问用户是否同意吸收或落地
+4. 用户同意后，再决定写入 `context/`、`.learnings/` 或核心文件
+
+## L0 / L1 / L2
+
+`context/` 下的重要目录采用三层结构：
+
+- `L0`：`.abstract.md`
+- `L1`：`.overview.md`
+- `L2`：详细正文
+
+默认顺序：
+1. 先读 `.abstract.md`
+2. 再读 `.overview.md`
+3. 最后读正文
+
+## 何时需要补检索轨迹
+
+以下情况建议补检索轨迹：
+- 复杂任务
+- 多来源资料汇总
+- 结构分析
+- 方案对比
+- 容易被追问依据的结论
+- 引用了历史错误、长期记忆或外部资料的判断

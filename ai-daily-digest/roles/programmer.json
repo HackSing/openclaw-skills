@@ -1,0 +1,44 @@
+{
+  "id": "programmer",
+  "name": "程序员",
+  "description": "工程博客、代码质量、工具和系统架构",
+  "feeds": [
+    { "name": "simonwillison.net", "xmlUrl": "https://simonwillison.net/atom/everything/", "htmlUrl": "https://simonwillison.net" },
+    { "name": "antirez.com", "xmlUrl": "http://antirez.com/rss", "htmlUrl": "http://antirez.com" },
+    { "name": "overreacted.io", "xmlUrl": "https://overreacted.io/rss.xml", "htmlUrl": "https://overreacted.io" },
+    { "name": "eli.thegreenplace.net", "xmlUrl": "https://eli.thegreenplace.net/feeds/all.atom.xml", "htmlUrl": "https://eli.thegreenplace.net" },
+    { "name": "fasterthanli.me", "xmlUrl": "https://fasterthanli.me/index.xml", "htmlUrl": "https://fasterthanli.me" },
+    { "name": "mitchellh.com", "xmlUrl": "https://mitchellh.com/feed.xml", "htmlUrl": "https://mitchellh.com" },
+    { "name": "Hacker News Best", "xmlUrl": "https://hnrss.org/best", "htmlUrl": "https://news.ycombinator.com" },
+    { "name": "Lobsters", "xmlUrl": "https://lobste.rs/rss", "htmlUrl": "https://lobste.rs" },
+    { "name": "The Pragmatic Engineer", "xmlUrl": "https://newsletter.pragmaticengineer.com/feed", "htmlUrl": "https://newsletter.pragmaticengineer.com" },
+    { "name": "Go Blog", "xmlUrl": "https://go.dev/blog/feed.atom", "htmlUrl": "https://go.dev/blog" },
+    { "name": "Rust Blog", "xmlUrl": "https://blog.rust-lang.org/feed.xml", "htmlUrl": "https://blog.rust-lang.org" },
+    { "name": "GitHub Blog", "xmlUrl": "https://github.blog/feed/", "htmlUrl": "https://github.blog" },
+    { "name": "Martin Fowler", "xmlUrl": "https://martinfowler.com/feed.atom", "htmlUrl": "https://martinfowler.com" },
+    { "name": "Julia Evans", "xmlUrl": "https://jvns.ca/atom.xml", "htmlUrl": "https://jvns.ca" },
+    { "name": "Dan Luu", "xmlUrl": "https://danluu.com/atom.xml", "htmlUrl": "https://danluu.com" }
+  ],
+  "categories": {
+    "languages":    { "emoji": "🔤", "label": "编程语言" },
+    "architecture": { "emoji": "🏗️", "label": "架构设计" },
+    "tools":        { "emoji": "🛠", "label": "工具 / 开源" },
+    "performance":  { "emoji": "⚡", "label": "性能优化" },
+    "practice":     { "emoji": "📋", "label": "工程实践" },
+    "other":        { "emoji": "📝", "label": "其他" }
+  },
+  "scoring": {
+    "persona": "你是一个资深程序员的技术雷达，正在为一位关注工程质量和技术深度的开发者筛选文章",
+    "relevanceDescription": "对程序员日常编码、架构设计和技术选型的价值",
+    "relevanceLevels": {
+      "high": "深度技术分析、系统设计案例、编程语言新特性、开源工具重大更新",
+      "medium": "通用工程实践、代码质量讨论、面试经验",
+      "low": "纯产品/商业新闻、非技术观点文章、市场分析"
+    }
+  },
+  "branding": {
+    "title": "程序员技术日报",
+    "subtitle": "工程师的每日技术雷达",
+    "highlightsLabel": "今日技术圈动态"
+  }
+}

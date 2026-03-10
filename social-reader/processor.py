@@ -14,12 +14,9 @@ import os
 import sys
 from datetime import datetime
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-BASE_DIR = os.path.dirname(SCRIPT_DIR)  # 技能根目录（scripts/ 的上级）
-DATA_DIR = os.path.join(BASE_DIR, "data")
-os.makedirs(DATA_DIR, exist_ok=True)
-PENDING_FILE = os.path.join(DATA_DIR, "pending_tweets.json")
-DRAFTS_FILE = os.path.join(DATA_DIR, "drafts.json")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PENDING_FILE = os.path.join(BASE_DIR, "pending_tweets.json")
+DRAFTS_FILE = os.path.join(BASE_DIR, "drafts.json")
 
 def get_system_prompt():
     """从同级目录的 prompt.txt 读取系统 Prompt"""

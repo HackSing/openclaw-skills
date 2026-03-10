@@ -1,0 +1,39 @@
+{
+  "id": "trader",
+  "name": "交易员",
+  "description": "金融新闻、Fintech 动态和市场分析",
+  "feeds": [
+    { "name": "Finextra", "xmlUrl": "https://www.finextra.com/rss/headlines.aspx", "htmlUrl": "https://www.finextra.com" },
+    { "name": "The Block", "xmlUrl": "https://www.theblock.co/rss.xml", "htmlUrl": "https://www.theblock.co" },
+    { "name": "CoinDesk", "xmlUrl": "https://www.coindesk.com/arc/outboundfeeds/rss/", "htmlUrl": "https://www.coindesk.com" },
+    { "name": "HN Fintech", "xmlUrl": "https://hnrss.org/newest?q=fintech+OR+trading+OR+finance", "htmlUrl": "https://news.ycombinator.com" },
+    { "name": "a16z Fintech", "xmlUrl": "https://a16z.com/category/fintech/feed/", "htmlUrl": "https://a16z.com/category/fintech/" },
+    { "name": "Y Combinator Blog", "xmlUrl": "https://www.ycombinator.com/blog/rss/", "htmlUrl": "https://www.ycombinator.com/blog" },
+    { "name": "Stratechery", "xmlUrl": "https://stratechery.com/feed/", "htmlUrl": "https://stratechery.com" },
+    { "name": "Patrick McKenzie", "xmlUrl": "https://www.kalzumeus.com/feed/", "htmlUrl": "https://www.kalzumeus.com" },
+    { "name": "FT Alphaville", "xmlUrl": "https://www.ft.com/alphaville?format=rss", "htmlUrl": "https://www.ft.com/alphaville" },
+    { "name": "Hacker News Best", "xmlUrl": "https://hnrss.org/best", "htmlUrl": "https://news.ycombinator.com" }
+  ],
+  "categories": {
+    "market":     { "emoji": "📈", "label": "市场动态" },
+    "fintech":    { "emoji": "💳", "label": "金融科技" },
+    "crypto":     { "emoji": "🔗", "label": "加密货币" },
+    "regulation": { "emoji": "⚖️", "label": "监管政策" },
+    "strategy":   { "emoji": "🎯", "label": "投资策略" },
+    "other":      { "emoji": "📝", "label": "其他" }
+  },
+  "scoring": {
+    "persona": "你是一个金融科技分析师，正在为一位关注市场和 Fintech 的交易员筛选文章",
+    "relevanceDescription": "对交易员和金融从业者的决策价值",
+    "relevanceLevels": {
+      "high": "重大市场事件、监管政策变化、Fintech 产品发布、交易策略分析",
+      "medium": "行业趋势报告、技术基础设施更新、创业融资新闻",
+      "low": "纯软件工程文章、非金融领域的技术讨论"
+    }
+  },
+  "branding": {
+    "title": "金融科技日报",
+    "subtitle": "交易员的每日必读",
+    "highlightsLabel": "今日金融圈动态"
+  }
+}
