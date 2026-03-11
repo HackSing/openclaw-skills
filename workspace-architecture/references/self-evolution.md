@@ -149,13 +149,13 @@ archive 清理：
 - `daily-review`
 
 检查原则：
-- 先检查是否存在
-- 不存在则创建
-- 已存在则核对调度、时区、会话目标、delivery 与消息内容是否符合约定
-- 如果是 macOS 环境，允许这些任务以 launchd 形式存在，对应标签可为 `ai.openclaw.daily-info-update` 与 `ai.openclaw.daily-review`
-- 如果固定名称任务或对应 launchd 标签已经存在并在运行，不要重复创建
+- 先检查 OpenClaw 的 cron 任务是否存在
+- 不存在则通过 `openclaw cron` 创建
+- 已存在则核对调度、时区、会话目标、delivery、agent 与消息内容是否符合约定
+- `agent` 必须显式绑定到当前智能体自己，不能绑定到其他智能体
+- 每个智能体维护自己的一对任务，即使任务名相同，也必须以当前智能体自己的 agent id 运行
 - 如果只有文案不完整，优先修正文案，不轻易改动整体机制
-- 不要重复创建同名任务
+- 不要重复创建属于当前智能体自己的同名任务
 
 固定约定：
 
@@ -165,6 +165,7 @@ archive 清理：
 - 时区：`Asia/Shanghai`
 - 会话：`isolated`
 - delivery：`none`
+- agent：当前智能体自己的 agent id，例如当前智能体是 `creator`，则 agent 必须是 `creator`
 - 作用：信息流更新，只产出 pending 规则，不直接写核心文件
 
 ### `daily-review`
@@ -173,6 +174,7 @@ archive 清理：
 - 时区：`Asia/Shanghai`
 - 会话：`isolated`
 - delivery：`none`
+- agent：当前智能体自己的 agent id，例如当前智能体是 `creator`，则 agent 必须是 `creator`
 - 作用：清理、补录、审核、归档和每日进化摘要，是候选规则的唯一晋升闸门
 
 ## `daily-info-update`
@@ -304,8 +306,9 @@ archive 清理：
 
 建制完成后，至少同时满足：
 - 目录和最小文件已建立
-- `daily-info-update` 已存在且配置正确
-- `daily-review` 已存在且配置正确
+- OpenClaw 的 `daily-info-update` 已存在且配置正确
+- OpenClaw 的 `daily-review` 已存在且配置正确
+- 这两个任务的 `agent` 都绑定到当前智能体自己
 - `AGENTS.md` 已接住运行层最小规则
 - 如果下一次会话不再触发本 skill，仅依赖新的 `AGENTS.md`，当前 agent 仍然能按新架构运行
 
@@ -351,6 +354,6 @@ archive 清理：
 启用自我进化机制后没有创建 `daily-info-update` 或 `daily-review`。
 
 修正：
-- 建制时必须检查这两个固定名称的 cron
+- 建制时必须检查这两个固定名称的 OpenClaw cron
 - 不存在则创建
-- 存在则核对配置，不要跳过
+- 存在则核对配置与 agent 绑定，不要跳过

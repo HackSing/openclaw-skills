@@ -120,10 +120,10 @@
 ### 调整 daily-info-update 或 daily-review
 处理方式：
 1. 先核对现有任务内容，不要直接执行 run
-2. 如果是 macOS 环境，也检查对应 launchd 标签 `ai.openclaw.daily-info-update` 与 `ai.openclaw.daily-review` 是否已存在并在运行
+2. 核对 OpenClaw cron 是否已经存在，并确认 `agent` 绑定到了当前智能体自己
 3. 先判断是文案收口还是机制重构
 4. 如果只是 schema、source、生命周期歧义，优先只改 message 文案
-5. 改完后做只读复核，确认 schedule、sessionTarget、delivery 未被误改
+5. 改完后做只读复核，确认 schedule、sessionTarget、delivery、agent 未被误改
 
 ## L0 / L1 / L2
 

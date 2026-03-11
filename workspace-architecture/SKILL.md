@@ -179,13 +179,13 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 - `daily-review`
 
 检查原则：
-- 先检查是否存在
-- 不存在则创建
-- 已存在则核对调度、时区、会话目标、delivery 与消息内容是否符合约定
-- 如果是 macOS 环境，允许这些任务以 launchd 形式存在，对应标签可为 `ai.openclaw.daily-info-update` 与 `ai.openclaw.daily-review`
-- 如果固定名称任务或对应 launchd 标签已经存在并在运行，不要重复创建
+- 先检查 OpenClaw 的 cron 任务是否存在
+- 不存在则通过 `openclaw cron` 创建
+- 已存在则核对调度、时区、会话目标、delivery、agent 与消息内容是否符合约定
+- `agent` 必须显式绑定到当前智能体自己，不能绑定到其他智能体
+- 每个智能体维护自己的一对任务，即使任务名相同，也必须以当前智能体自己的 agent id 运行
 - 如果只有文案不完整，优先修正文案，不轻易改动整体机制
-- 不要重复创建同名任务
+- 不要重复创建属于当前智能体自己的同名任务
 
 固定约定：
 
@@ -195,6 +195,7 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 - 时区：`Asia/Shanghai`
 - 会话：`isolated`
 - delivery：`none`
+- agent：当前智能体自己的 agent id，例如当前智能体是 `creator`，则 agent 必须是 `creator`
 - 作用：信息流更新，只产出 pending 规则，不直接写核心文件
 
 #### `daily-review`
@@ -203,6 +204,7 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 - 时区：`Asia/Shanghai`
 - 会话：`isolated`
 - delivery：`none`
+- agent：当前智能体自己的 agent id，例如当前智能体是 `creator`，则 agent 必须是 `creator`
 - 作用：清理、补录、审核、归档和每日进化摘要，是候选规则的唯一晋升闸门
 
 ### 运行层接管规则
@@ -235,8 +237,9 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 
 建制完成后，至少同时满足：
 - 目录和最小文件已建立
-- `daily-info-update` 已存在且配置正确
-- `daily-review` 已存在且配置正确
+- OpenClaw 的 `daily-info-update` 已存在且配置正确
+- OpenClaw 的 `daily-review` 已存在且配置正确
+- 这两个任务的 `agent` 都绑定到当前智能体自己
 - `AGENTS.md` 已接住运行层最小规则
 - 如果下一次会话不再触发本 skill，仅依赖新的 `AGENTS.md`，当前 agent 仍然能按新架构运行
 
@@ -488,7 +491,7 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 - 不要把 heartbeat 当成反思、审核或规则晋升的主通道
 - 不要在未确认 workspace 根路径前就乱建目录或文件
 - 不要在未备份旧文档前直接覆盖 `AGENTS.md`
-- 不要重复创建同名 cron 任务
+- 不要重复创建属于当前智能体自己的同名 OpenClaw cron 任务
 - 不要用批量空文件伪装成“已经完成初始化”
 
 ## 典型场景
@@ -514,7 +517,7 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 2. 检查 `memory/`、`.learnings/`、`.learnings/pending/`、`context/`、`shared-context/`、`reviews/` 是否存在
 3. 缺失时主动创建最小可用目录骨架
 4. 初始化 `rules.json` 与 `info-sources.json`
-5. 检查并建立或修正 `daily-info-update` 与 `daily-review`
+5. 检查并建立或修正属于当前智能体自己的 OpenClaw cron：`daily-info-update` 与 `daily-review`
 6. 检查并更新 `AGENTS.md`
 7. 更新前先创建 `AGENTS.backup-YYYYMMDD-HHMM.md`
 8. 做建制验收
