@@ -29,7 +29,6 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 
 - 先确认当前 agent 的 workspace 根路径，再在该 workspace 内执行初始化、读取与写入
 - 首次接管一个 workspace 时，先检查最小目录骨架；缺失时优先使用 `bootstrap.py init` 创建最小可用结构
-- `HEARTBEAT.md` 按当前 agent 自己 workspace 根路径读取，不默认全体 agent 共用同一份
 - daily memory 必须先读今天对应的 `memory/YYYY-MM-DD.md`，再读昨天对应的 `memory/YYYY-MM-DD.md`
 - 如果 today 或 yesterday 对应的 daily memory 文件不存在，必须明确说明不存在，不要假装已经读取
 - 有 Git 就提交；无 Git 时，不要把 commit 当阻塞
@@ -69,11 +68,8 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 
 典型文件：
 - `AGENTS.md`
-- `HEARTBEAT.md`
 - `TOOLS.md`
 - `NOTICE.md`
-
-注意：`HEARTBEAT.md` 仍是当前 agent 自己 workspace 的运行文件，但本技能不再把 heartbeat 作为反思或进化主通道；这些任务统一交给 `daily-info-update` 与 `daily-review`。
 
 ### Knowledge
 存放长期记忆和结构化事件记录。
@@ -446,15 +442,6 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 目标不是“有文件就行”，而是形成：
 读取旧经验 → 执行任务 → 写回新经验 → `daily-review` 审核 → 下次再先读 的闭环。
 
-## heartbeat 边界
-
-本技能不再把 heartbeat 作为反思或进化主通道。
-
-反思、候选规则发现、审核、归档和每日进化摘要，统一由以下两个固定任务完成：
-- `daily-info-update`
-- `daily-review`
-
-`HEARTBEAT.md` 如存在，仍按当前 agent 自己 workspace 根路径读取，但仅用于轻量运行规则，不承载这套自我进化闭环。
 
 ## 外部主动学习
 
@@ -491,8 +478,6 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 - 不要只记录错误而不在下次任务前回看
 - 不要未经用户同意就吸收外部新规则
 - 不要把无 Git 环境误判成任务阻塞
-- 不要把某个 agent 的 `HEARTBEAT.md` 误当成所有 agent 共用的主文件
-- 不要把 heartbeat 当成反思、审核或规则晋升的主通道
 - 不要在未确认 workspace 根路径前就乱建目录或文件
 - 不要在未备份旧文档前直接覆盖 `AGENTS.md`
 - 不要重复创建属于当前智能体自己的同名 OpenClaw cron 任务
@@ -526,13 +511,10 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 7. 更新前先创建 `AGENTS.backup-YYYYMMDD-HHMM.md`
 8. 做建制验收
 
-### 场景七：收到 heartbeat
-按当前 workspace 的 `HEARTBEAT.md` 执行轻量运行规则即可，不要在 heartbeat 中承担反思、审核或规则晋升；这些任务统一交给 `daily-info-update` 与 `daily-review`。
-
-### 场景八：想从外部学习新方法
+### 场景七：想从外部学习新方法
 先做候选摘要并向用户确认，同意后再吸收落盘。
 
-### 场景九：维护自我进化规则队列
+### 场景八：维护自我进化规则队列
 优先读取 `./references/self-evolution.md`，检查 schema、状态机、清理规则和 `daily-info-update`、`daily-review` 的职责边界；修改定时任务时，优先只改文案，不轻易改整体机制与调度。
 
 ## 工作方法
