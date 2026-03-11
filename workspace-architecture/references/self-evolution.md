@@ -142,6 +142,37 @@ archive 清理：
 - archive 文件默认保留 30 天
 - 超过 30 天自动删除
 
+## 建制层必须建立的两个 cron
+
+启用自我进化机制时，必须检查以下两个固定名称的 cron 任务：
+- `daily-info-update`
+- `daily-review`
+
+检查原则：
+- 先检查是否存在
+- 不存在则创建
+- 已存在则核对调度、时区、会话目标、delivery 与消息内容是否符合约定
+- 如果只有文案不完整，优先修正文案，不轻易改动整体机制
+- 不要重复创建同名任务
+
+固定约定：
+
+### `daily-info-update`
+- 名称：`daily-info-update`
+- 调度：`0 22 * * *`
+- 时区：`Asia/Shanghai`
+- 会话：`isolated`
+- delivery：`none`
+- 作用：信息流更新，只产出 pending 规则，不直接写核心文件
+
+### `daily-review`
+- 名称：`daily-review`
+- 调度：`0 23 * * *`
+- 时区：`Asia/Shanghai`
+- 会话：`isolated`
+- delivery：`none`
+- 作用：清理、补录、审核、归档和每日进化摘要，是候选规则的唯一晋升闸门
+
 ## `daily-info-update`
 
 推荐调度：
@@ -267,6 +298,15 @@ archive 清理：
 - `daily-info-update` 应直接跳过
 - 并在当天 daily memory 记录“信息源为空”
 
+## 建制验收标准
+
+建制完成后，至少同时满足：
+- 目录和最小文件已建立
+- `daily-info-update` 已存在且配置正确
+- `daily-review` 已存在且配置正确
+- `AGENTS.md` 已接住运行层最小规则
+- 如果下一次会话不再触发本 skill，仅依赖新的 `AGENTS.md`，当前 agent 仍然能按新架构运行
+
 ## 常见错误
 
 ### 错误一
@@ -304,3 +344,11 @@ archive 清理：
 - 建制后必须接管运行层
 - 先备份 `AGENTS.md`
 - 再把新架构运行规则写回主文档
+
+### 错误六
+启用自我进化机制后没有创建 `daily-info-update` 或 `daily-review`。
+
+修正：
+- 建制时必须检查这两个固定名称的 cron
+- 不存在则创建
+- 存在则核对配置，不要跳过

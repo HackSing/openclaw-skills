@@ -39,6 +39,7 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 - 初始化时只创建最小骨架，不预填虚假内容，不批量空造无用文件
 - 首次建制完成后，必须检查并更新当前 workspace 的 `AGENTS.md`，让运行层接住新架构
 - 更新 `AGENTS.md` 前，必须先备份原文件，再修改；不要直接裸改旧文档
+- 启用自我进化机制时，必须检查名称为 `daily-info-update` 与 `daily-review` 的 cron 任务是否存在；不存在则创建，存在则核对配置是否符合约定
 
 如果技能规则与本地旧文档表述不一致，优先按本技能中的执行型规则处理，再回看本地文档补细节。
 
@@ -160,39 +161,69 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 
 ## 建制后接管运行层
 
-建制完成不等于能稳定运行。首次完成以下任一动作后，必须立即检查并更新当前 workspace 的 `AGENTS.md`：
+建制完成不等于能稳定运行。首次完成以下任一动作后，必须按固定顺序完成接管：
 - 初始化最小目录骨架
 - 启用 `.learnings/pending/`
 - 启用自我进化机制
 - 把 workspace 从旧结构迁移到五层结构
 
-### 第一步：读取当前 `AGENTS.md`
+### 建制完成的固定顺序
 
-重点检查它是否已经覆盖以下运行层最小规则：
+1. 检查并补齐目录与最小文件
+2. 检查名称为 `daily-info-update` 和 `daily-review` 的 cron 任务是否存在；不存在则创建，存在则核对配置
+3. 读取当前 `AGENTS.md`
+4. 如需修改，先创建备份文件 `AGENTS.backup-YYYYMMDD-HHMM.md`
+5. 更新 `AGENTS.md` 的运行层内容
+6. 做建制验收，确认后续会话仅依赖 `AGENTS.md` 也能正常运行
+
+### 建制阶段的 cron 建立规则
+
+启用自我进化机制时，必须检查以下两个固定名称的 cron 任务：
+- `daily-info-update`
+- `daily-review`
+
+检查原则：
+- 先检查是否存在
+- 不存在则创建
+- 已存在则核对调度、时区、会话目标、delivery 与消息内容是否符合约定
+- 如果只有文案不完整，优先修正文案，不轻易改动整体机制
+- 不要重复创建同名任务
+
+固定约定：
+
+#### `daily-info-update`
+- 名称：`daily-info-update`
+- 调度：`0 22 * * *`
+- 时区：`Asia/Shanghai`
+- 会话：`isolated`
+- delivery：`none`
+- 作用：信息流更新，只产出 pending 规则，不直接写核心文件
+
+#### `daily-review`
+- 名称：`daily-review`
+- 调度：`0 23 * * *`
+- 时区：`Asia/Shanghai`
+- 会话：`isolated`
+- delivery：`none`
+- 作用：清理、补录、审核、归档和每日进化摘要，是候选规则的唯一晋升闸门
+
+### 运行层接管规则
+
+重点检查当前 `AGENTS.md` 是否已经覆盖以下运行层最小规则：
 - 会话启动顺序
 - 最小检索顺序
 - 新的写入边界
 - `.learnings/pending/rules.json` 的运行规则
 - `daily-review` 作为候选规则晋升闸门
 
-### 第二步：先备份，再更新
-
-如果需要修改 `AGENTS.md`，必须先备份。
-
-固定备份命名：
-- `AGENTS.backup-YYYYMMDD-HHMM.md`
-
-执行规则：
+如果需要修改 `AGENTS.md`：
+- 必须先备份，固定命名为 `AGENTS.backup-YYYYMMDD-HHMM.md`
 - 先读取原文件，确认哪些段落属于人格、协作习惯和安全边界
-- 先创建备份文件，再更新 `AGENTS.md`
 - 不要无备份直接覆盖旧文档
 - 不要删除与新架构无冲突的已有规则
+- 只接管运行层，不复制整份 skill
 
-### 第三步：只接管运行层，不复制整份 skill
-
-更新 `AGENTS.md` 时，只保留运行时必需规则，不要把本 skill 的完整机制全文复制进去。
-
-`AGENTS.md` 应保留的运行层内容：
+更新后的 `AGENTS.md` 应保留的运行层内容：
 - 会话启动顺序
 - 最小导航与检索顺序
 - 写入边界
@@ -202,14 +233,14 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 - 长任务主动汇报
 - 有 Git 就提交，无 Git 不阻塞
 
-### 第四步：更新后验收
+### 建制验收标准
 
-更新完成后，必须反问自己：
-- 如果下一次会话不再触发本 skill，仅依赖新的 `AGENTS.md`，当前 agent 是否仍然能按新架构运行
-- 是否知道先读什么、写到哪里、什么时候进入 pending 队列
-- 是否知道定时任务产生的候选规则不能直接写入核心文件
-
-如果答案是否定的，说明运行层接管还没完成。
+建制完成后，至少同时满足：
+- 目录和最小文件已建立
+- `daily-info-update` 已存在且配置正确
+- `daily-review` 已存在且配置正确
+- `AGENTS.md` 已接住运行层最小规则
+- 如果下一次会话不再触发本 skill，仅依赖新的 `AGENTS.md`，当前 agent 仍然能按新架构运行
 
 ## 自我进化机制
 
@@ -465,6 +496,7 @@ heartbeat 反思的最小可跑通闭环只保留四项核心检查：
 - 不要把某个 agent 的 `HEARTBEAT.md` 误当成所有 agent 共用的主文件
 - 不要在未确认 workspace 根路径前就乱建目录或文件
 - 不要在未备份旧文档前直接覆盖 `AGENTS.md`
+- 不要重复创建同名 cron 任务
 - 不要用批量空文件伪装成“已经完成初始化”
 
 ## 典型场景
@@ -490,10 +522,10 @@ heartbeat 反思的最小可跑通闭环只保留四项核心检查：
 2. 检查 `memory/`、`.learnings/`、`.learnings/pending/`、`context/`、`shared-context/`、`reviews/` 是否存在
 3. 缺失时主动创建最小可用目录骨架
 4. 初始化 `rules.json` 与 `info-sources.json`
-5. 检查并更新 `AGENTS.md`
-6. 更新前先创建 `AGENTS.backup-YYYYMMDD-HHMM.md`
-7. 不要预填虚假内容，不要批量创建无意义空文件
-8. 再开始后续的记忆、学习、上下文落盘工作
+5. 检查并建立或修正 `daily-info-update` 与 `daily-review`
+6. 检查并更新 `AGENTS.md`
+7. 更新前先创建 `AGENTS.backup-YYYYMMDD-HHMM.md`
+8. 做建制验收
 
 ### 场景七：heartbeat 期间的自我反思
 检查今天的错误、纠正、可晋升经验和需要归档的资料，而不是只做表面心跳响应。
@@ -527,10 +559,11 @@ heartbeat 反思的最小可跑通闭环只保留四项核心检查：
 6. 用 pending 队列隔离定时任务发现的规则候选
 7. 用 `daily-review` 审核候选规则并决定是否晋升
 8. 建制后把运行层规则写回 `AGENTS.md`
+9. 建制时检查并建立 `daily-info-update` 与 `daily-review`
 
 ## 需要更细 guidance 时
 
 按需读取：
 - `./references/model-and-boundaries.md`：五层模型、边界和常见误区
 - `./references/scenarios-and-retrieval.md`：检索顺序、错误回读、heartbeat 反思、落盘场景和外部学习规则
-- `./references/self-evolution.md`：pending 规则 schema、状态机、`daily-info-update`、`daily-review` 与运行层接管规则
+- `./references/self-evolution.md`：pending 规则 schema、状态机、`daily-info-update`、`daily-review`、运行层接管与建制验收规则
