@@ -75,7 +75,7 @@
 首次接管 workspace 时，应先补齐最小目录骨架，再在骨架内工作。
 
 使用：
-- `python3 ~/.openclaw/skills/workspace-architecture/scripts/bootstrap.py init <workspace-root>`
+- `python3 ~/.openclaw/skills/EvoLoop/scripts/bootstrap.py init <workspace-root>`
 
 应主动创建的最小目录：
 - `memory/`

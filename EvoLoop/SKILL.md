@@ -1,11 +1,11 @@
 ---
-name: workspace-architecture
-description: Explain and apply a layered workspace architecture for AI agents. Use when an agent needs to understand how a workspace is organized, decide where files should live, determine retrieval order for complex tasks, initialize a new workspace safely, integrate new runtime rules into AGENTS.md after architecture setup, or operate the self-evolution loop built on .learnings/pending/rules.json and the cron jobs named daily-info-update and daily-review.
+name: EvoLoop
+description: Explain and apply a layered EvoLoop for AI agents. Use when an agent needs to understand how a workspace is organized, decide where files should live, determine retrieval order for complex tasks, initialize a new workspace safely, integrate new runtime rules into AGENTS.md after architecture setup, or operate the self-evolution loop built on .learnings/pending/rules.json and the cron jobs named daily-info-update and daily-review.
 ---
 
-# Workspace Architecture
+# EvoLoop
 
-用这份技能来理解、建立并运行一套面向智能体协作的 workspace 分层体系。
+用这份技能来理解、建立并运行一套面向智能体自我反思和学习的 workspace 分层体系。
 
 ## 安装后使用
 
@@ -17,13 +17,10 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 - `./references/self-evolution.md`
 
 需要初始化 workspace 最小骨架时，使用：
-- `python3 ~/.openclaw/skills/workspace-architecture/scripts/bootstrap.py init <workspace-root>`
+- `python3 ~/.openclaw/skills/EvoLoop/scripts/bootstrap.py init <workspace-root>`
 
-需要检查集成与自我进化骨架状态时，使用：
-- `python3 ~/.openclaw/skills/workspace-architecture/scripts/bootstrap.py check <workspace-root>`
-
-需要创建规则补丁文件时，使用：
-- `python3 ~/.openclaw/skills/workspace-architecture/scripts/bootstrap.py patch <workspace-root>`
+需要检查 `AGENTS.md` 接管状态与自我进化骨架状态时，使用：
+- `python3 ~/.openclaw/skills/EvoLoop/scripts/bootstrap.py check <workspace-root>`
 
 ## 执行硬规则
 
@@ -118,10 +115,10 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 首次在一个 workspace 中使用本技能时，先检查最小目录骨架是否存在。
 
 优先执行：
-- `python3 ~/.openclaw/skills/workspace-architecture/scripts/bootstrap.py init <workspace-root>`
+- `python3 ~/.openclaw/skills/EvoLoop/scripts/bootstrap.py init <workspace-root>`
 
 如果需要先预览而不实际写入，可先执行：
-- `python3 ~/.openclaw/skills/workspace-architecture/scripts/bootstrap.py init <workspace-root> --dry-run`
+- `python3 ~/.openclaw/skills/EvoLoop/scripts/bootstrap.py init <workspace-root> --dry-run`
 
 默认应主动创建的最小目录：
 - `memory/`

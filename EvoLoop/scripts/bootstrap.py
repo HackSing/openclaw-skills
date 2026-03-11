@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""自包含的 workspace-architecture 引导工具。
+"""自包含的 EvoLoop 引导工具。
 
-对外只保留一个脚本入口，但通过子命令明确区分职责：
+对外只保留两个子命令：
 - init: 初始化 workspace 最小目录骨架与自我进化最小文件
-- check: 检查 AGENTS.md 的 frontmatter 状态与自我进化骨架状态
-- patch: 创建 WORKSPACE-PATCH.md 规则补丁文件
+- check: 检查 AGENTS.md 接管状态与自我进化骨架状态
 """
 
 from __future__ import annotations
@@ -45,72 +44,15 @@ INIT_FILES = {
     },
 }
 
-PATCH_TEMPLATES = {
-    "WORKSPACE-PATCH.md": """# WORKSPACE-PATCH.md
-
-版本：{date}
-
-## 用途
-
-这是 workspace-architecture 技能的规则补丁文件。
-
-**不要直接修改 AGENTS.md 的原有内容！**
-而是通过 frontmatter 引用此文件，让 Agent 优先读取。
-
-## 集成方式
-
-在你的 AGENTS.md 最顶部添加：
-
-```markdown
----
-workspace-architecture-patch: ./WORKSPACE-PATCH.md
----
-```
-
-## 核心规则
-
-### 1. 首次接管 workspace 检查
-
-首次在一个 workspace 中使用时，先检查最小目录骨架：
-- memory/
-- .learnings/
-- .learnings/pending/
-- .learnings/pending/archive/
-- context/
-- shared-context/
-- reviews/
-
-如果缺失，通过本技能的 bootstrap.py init 子命令创建。
-
-### 2. daily memory 读取规则
-
-必须先读今天对应的 `memory/YYYY-MM-DD.md`，再读昨天对应的 `memory/YYYY-MM-DD.md`。
-
-如果文件不存在，必须明确说明不存在，不要假装已经读取。
-
-### 3. 自我进化规则
-
-- 名称为 `daily-info-update` 和 `daily-review` 的 cron 任务发现候选规则时，必须先进入 `.learnings/pending/rules.json`
-- `rules.json` 只保留 `pending`
-- 其他状态通过名称为 `daily-review` 的 cron 任务立即归档到 `.learnings/pending/archive/`
-
-### 4. 写入边界
-
-- 资料型内容 → `context/`
-- 错误和纠正 → `.learnings/`
-- 长期稳定经验 → `MEMORY.md`
-
-### 5. 不要直接修改用户原有文档
-
-- 不要直接修改 AGENTS.md 的原有内容
-- 通过 frontmatter 引用补丁文件
-- 需要完整规则时读取：~/.openclaw/skills/workspace-architecture/SKILL.md
-
-## 完整规则
-
-完整规则请读取：~/.openclaw/skills/workspace-architecture/SKILL.md
-""",
-}
+AGENTS_MARKERS = [
+    "SOUL.md",
+    "USER.md",
+    "MEMORY.md",
+    ".learnings/pending/rules.json",
+    "daily-review",
+    "daily-info-update",
+    "关键改动前先给方案",
+]
 
 
 def resolve_workspace(workspace: str, dry_run: bool) -> Path:
@@ -161,51 +103,23 @@ def ensure_json_files(base: Path, version_date: str, dry_run: bool) -> list[str]
     return logs
 
 
-def ensure_patch(base: Path, version_date: str, dry_run: bool) -> list[str]:
-    logs: list[str] = []
-    for rel, template in PATCH_TEMPLATES.items():
-        path = base / rel
-        if path.exists():
-            logs.append(f"EXISTS  file {rel}")
-            continue
-        if dry_run:
-            logs.append(f"WOULD   file {rel}")
-            continue
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(template.format(date=version_date), encoding="utf-8")
-        logs.append(f"CREATED file {rel}")
-    return logs
-
-
-def check_frontmatter(base: Path) -> list[str]:
+def check_agents_status(base: Path) -> list[str]:
     logs: list[str] = []
     filename = "AGENTS.md"
     path = base / filename
     if not path.exists():
-        logs.append(f"SKIP    file {filename} (not found)")
+        logs.append(f"MISSING file {filename}")
         return logs
 
     content = path.read_text(encoding="utf-8")
-    lines = content.splitlines()
+    missing = [marker for marker in AGENTS_MARKERS if marker not in content]
+    if not missing:
+        logs.append(f"OK      file {filename} (运行层规则已接管)")
+        return logs
 
-    has_frontmatter = False
-    has_patch_key = False
-
-    if lines and lines[0].strip() == "---":
-        has_frontmatter = True
-        for line in lines[1:]:
-            if line.strip() == "---":
-                break
-            if line.strip().startswith("workspace-architecture-patch:"):
-                has_patch_key = True
-                break
-
-    if has_frontmatter and has_patch_key:
-        logs.append(f"OK      file {filename} (has frontmatter + patch key)")
-    elif has_frontmatter:
-        logs.append(f"WARN    file {filename} (has frontmatter but no patch key)")
-    else:
-        logs.append(f"MISSING file {filename} (no frontmatter)")
+    logs.append(f"WARN    file {filename} (运行层规则可能未完整接管)")
+    for marker in missing:
+        logs.append(f"MISS    marker {marker}")
     return logs
 
 
@@ -253,7 +167,7 @@ def check_self_evolution(base: Path) -> list[str]:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="自包含的 workspace-architecture 引导工具。"
+        description="自包含的 EvoLoop 引导工具。"
     )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
@@ -273,25 +187,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     check_parser = subparsers.add_parser(
-        "check", help="检查 AGENTS.md 的 frontmatter 状态与自我进化骨架状态。"
+        "check", help="检查 AGENTS.md 接管状态与自我进化骨架状态。"
     )
     check_parser.add_argument(
         "workspace", nargs="?", default=".", help="目标 workspace 根路径，默认当前目录。"
-    )
-
-    patch_parser = subparsers.add_parser(
-        "patch", help="创建 WORKSPACE-PATCH.md 规则补丁文件。"
-    )
-    patch_parser.add_argument(
-        "workspace", nargs="?", default=".", help="目标 workspace 根路径，默认当前目录。"
-    )
-    patch_parser.add_argument(
-        "--dry-run", action="store_true", help="只输出将要创建或跳过的内容，不实际写入。"
-    )
-    patch_parser.add_argument(
-        "--date",
-        default=date.today().isoformat(),
-        help="写入补丁文件时使用的版本日期，默认当天日期。",
     )
 
     return parser
@@ -300,7 +199,7 @@ def build_parser() -> argparse.ArgumentParser:
 def run_init(args: argparse.Namespace) -> int:
     base = resolve_workspace(args.workspace, args.dry_run)
     print(f"WORKSPACE {base}")
-    print("INIT    workspace-architecture")
+    print("INIT    EvoLoop")
     for line in ensure_dirs(base, MIN_DIRS, args.dry_run):
         print(line)
     for line in ensure_dirs(base, OPTIONAL_DIRS, args.dry_run):
@@ -314,8 +213,8 @@ def run_init(args: argparse.Namespace) -> int:
 def run_check(args: argparse.Namespace) -> int:
     base = resolve_workspace(args.workspace, dry_run=False)
     print(f"WORKSPACE {base}")
-    print("CHECK   frontmatter status")
-    for line in check_frontmatter(base):
+    print("CHECK   AGENTS.md takeover status")
+    for line in check_agents_status(base):
         print(line)
     print("CHECK   self-evolution status")
     for line in check_self_evolution(base):
@@ -323,36 +222,14 @@ def run_check(args: argparse.Namespace) -> int:
     print()
     print("=" * 60)
     print("集成提示：")
-    print("1. 在 AGENTS.md 最顶部添加：")
-    print("   ---")
-    print("   workspace-architecture-patch: ./WORKSPACE-PATCH.md")
-    print("   ---")
-    print("2. 通过以下命令创建补丁文件：")
-    print("   python3 ~/.openclaw/skills/workspace-architecture/scripts/bootstrap.py patch <workspace-root>")
+    print("1. 读取当前 AGENTS.md，并先备份原文件。")
+    print("2. 直接把 EvoLoop 的运行层最小规则写入 AGENTS.md。")
     print("3. 如缺少 pending 目录或 JSON 文件，执行：")
-    print("   python3 ~/.openclaw/skills/workspace-architecture/scripts/bootstrap.py init <workspace-root>")
+    print("   python3 ~/.openclaw/skills/EvoLoop/scripts/bootstrap.py init <workspace-root>")
+    print("4. 完成后再次执行：")
+    print("   python3 ~/.openclaw/skills/EvoLoop/scripts/bootstrap.py check <workspace-root>")
     print("=" * 60)
     print("DONE check complete")
-    return 0
-
-
-def run_patch(args: argparse.Namespace) -> int:
-    base = resolve_workspace(args.workspace, args.dry_run)
-    print(f"WORKSPACE {base}")
-    print("PATCH   workspace-architecture")
-    for line in ensure_patch(base, args.date, args.dry_run):
-        print(line)
-    print()
-    print("=" * 60)
-    print("下一步：")
-    print("1. 在 AGENTS.md 最顶部添加：")
-    print("   ---")
-    print("   workspace-architecture-patch: ./WORKSPACE-PATCH.md")
-    print("   ---")
-    print("2. 使用以下命令检查集成与自我进化骨架状态：")
-    print("   python3 ~/.openclaw/skills/workspace-architecture/scripts/bootstrap.py check <workspace-root>")
-    print("=" * 60)
-    print("DONE patch complete")
     return 0
 
 
@@ -364,8 +241,6 @@ def main() -> int:
         return run_init(args)
     if args.command == "check":
         return run_check(args)
-    if args.command == "patch":
-        return run_patch(args)
 
     parser.error(f"未知命令: {args.command}")
     return 2

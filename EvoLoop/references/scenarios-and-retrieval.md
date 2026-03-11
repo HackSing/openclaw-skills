@@ -71,8 +71,8 @@
 ### 首次接管 workspace
 处理方式：
 1. 先确认当前 agent 的 workspace 根路径
-2. 优先执行 `python3 ~/.openclaw/skills/workspace-architecture/scripts/bootstrap.py init <workspace-root>`
-3. 如需先预览风险，先执行 `python3 ~/.openclaw/skills/workspace-architecture/scripts/bootstrap.py init <workspace-root> --dry-run`
+2. 优先执行 `python3 ~/.openclaw/skills/EvoLoop/scripts/bootstrap.py init <workspace-root>`
+3. 如需先预览风险，先执行 `python3 ~/.openclaw/skills/EvoLoop/scripts/bootstrap.py init <workspace-root> --dry-run`
 4. 检查 `memory/`、`.learnings/`、`.learnings/pending/`、`context/`、`shared-context/`、`reviews/` 是否已齐备
 5. 检查 `.learnings/pending/rules.json` 与 `.learnings/pending/info-sources.json` 是否已初始化
 6. 只创建最小可用结构，不预填虚假内容
