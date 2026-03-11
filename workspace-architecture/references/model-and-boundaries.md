@@ -165,8 +165,8 @@
 把某个 agent 的 `HEARTBEAT.md` 误当成所有 agent 共用文件。
 
 修正：
-- 先确认当前 agent 的 workspace
-- 再读取该 workspace 根里的 `HEARTBEAT.md`
+- `HEARTBEAT.md` 只在各自 workspace 内生效
+- 不要把它当成跨 agent 共享文件
 
 ### 误区九
 只创建 cron，不把自我进化机制写回 skill。

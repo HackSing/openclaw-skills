@@ -95,13 +95,6 @@
 1. 写入 `memory/decisions/`
 2. 必要时在项目目录保留项目级决策记录
 
-### 收到 heartbeat
-处理方式：
-1. 先确认当前 agent 的 workspace 根路径
-2. 读取该 workspace 根里的 `HEARTBEAT.md`
-3. 只执行轻量运行规则，不把 heartbeat 当成反思、审核或规则晋升通道
-4. 自我进化相关检查统一交给 `daily-info-update` 与 `daily-review`
-
 ### 主动外部学习
 处理方式：
 1. 搜索或收集可能有价值的外部资料

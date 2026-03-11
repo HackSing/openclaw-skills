@@ -3,7 +3,7 @@
 
 对外只保留一个脚本入口，但通过子命令明确区分职责：
 - init: 初始化 workspace 最小目录骨架与自我进化最小文件
-- check: 检查 AGENTS.md / HEARTBEAT.md 的 frontmatter 状态与自我进化骨架状态
+- check: 检查 AGENTS.md 的 frontmatter 状态与自我进化骨架状态
 - patch: 创建 WORKSPACE-PATCH.md 规则补丁文件
 """
 
@@ -54,12 +54,12 @@ PATCH_TEMPLATES = {
 
 这是 workspace-architecture 技能的规则补丁文件。
 
-**不要直接修改 AGENTS.md 或 HEARTBEAT.md 的原有内容！**
+**不要直接修改 AGENTS.md 的原有内容！**
 而是通过 frontmatter 引用此文件，让 Agent 优先读取。
 
 ## 集成方式
 
-在你的 AGENTS.md 或 HEARTBEAT.md 最顶部添加：
+在你的 AGENTS.md 最顶部添加：
 
 ```markdown
 ---
@@ -100,13 +100,9 @@ workspace-architecture-patch: ./WORKSPACE-PATCH.md
 - 错误和纠正 → `.learnings/`
 - 长期稳定经验 → `MEMORY.md`
 
-### 5. heartbeat 响应
+### 5. 不要直接修改用户原有文档
 
-无异常统一回复：HEARTBEAT_OK
-
-### 6. 不要直接修改用户原有文档
-
-- 不要直接修改 AGENTS.md 或 HEARTBEAT.md 的原有内容
+- 不要直接修改 AGENTS.md 的原有内容
 - 通过 frontmatter 引用补丁文件
 - 需要完整规则时读取：~/.openclaw/skills/workspace-architecture/SKILL.md
 
@@ -183,33 +179,33 @@ def ensure_patch(base: Path, version_date: str, dry_run: bool) -> list[str]:
 
 def check_frontmatter(base: Path) -> list[str]:
     logs: list[str] = []
-    for filename in ["AGENTS.md", "HEARTBEAT.md"]:
-        path = base / filename
-        if not path.exists():
-            logs.append(f"SKIP    file {filename} (not found)")
-            continue
+    filename = "AGENTS.md"
+    path = base / filename
+    if not path.exists():
+        logs.append(f"SKIP    file {filename} (not found)")
+        return logs
 
-        content = path.read_text(encoding="utf-8")
-        lines = content.splitlines()
+    content = path.read_text(encoding="utf-8")
+    lines = content.splitlines()
 
-        has_frontmatter = False
-        has_patch_key = False
+    has_frontmatter = False
+    has_patch_key = False
 
-        if lines and lines[0].strip() == "---":
-            has_frontmatter = True
-            for line in lines[1:]:
-                if line.strip() == "---":
-                    break
-                if line.strip().startswith("workspace-architecture-patch:"):
-                    has_patch_key = True
-                    break
+    if lines and lines[0].strip() == "---":
+        has_frontmatter = True
+        for line in lines[1:]:
+            if line.strip() == "---":
+                break
+            if line.strip().startswith("workspace-architecture-patch:"):
+                has_patch_key = True
+                break
 
-        if has_frontmatter and has_patch_key:
-            logs.append(f"OK      file {filename} (has frontmatter + patch key)")
-        elif has_frontmatter:
-            logs.append(f"WARN    file {filename} (has frontmatter but no patch key)")
-        else:
-            logs.append(f"MISSING file {filename} (no frontmatter)")
+    if has_frontmatter and has_patch_key:
+        logs.append(f"OK      file {filename} (has frontmatter + patch key)")
+    elif has_frontmatter:
+        logs.append(f"WARN    file {filename} (has frontmatter but no patch key)")
+    else:
+        logs.append(f"MISSING file {filename} (no frontmatter)")
     return logs
 
 
@@ -277,7 +273,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     check_parser = subparsers.add_parser(
-        "check", help="检查 AGENTS.md 和 HEARTBEAT.md 的 frontmatter 状态与自我进化骨架状态。"
+        "check", help="检查 AGENTS.md 的 frontmatter 状态与自我进化骨架状态。"
     )
     check_parser.add_argument(
         "workspace", nargs="?", default=".", help="目标 workspace 根路径，默认当前目录。"
@@ -327,7 +323,7 @@ def run_check(args: argparse.Namespace) -> int:
     print()
     print("=" * 60)
     print("集成提示：")
-    print("1. 在 AGENTS.md 或 HEARTBEAT.md 最顶部添加：")
+    print("1. 在 AGENTS.md 最顶部添加：")
     print("   ---")
     print("   workspace-architecture-patch: ./WORKSPACE-PATCH.md")
     print("   ---")
@@ -349,7 +345,7 @@ def run_patch(args: argparse.Namespace) -> int:
     print()
     print("=" * 60)
     print("下一步：")
-    print("1. 在 AGENTS.md 或 HEARTBEAT.md 最顶部添加：")
+    print("1. 在 AGENTS.md 最顶部添加：")
     print("   ---")
     print("   workspace-architecture-patch: ./WORKSPACE-PATCH.md")
     print("   ---")
