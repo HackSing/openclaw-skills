@@ -27,7 +27,6 @@
 优先回看：
 - `.learnings/ERRORS.md`
 - `.learnings/LEARNINGS.md`
-- `.learnings/PROMOTION_QUEUE.md`
 - `.learnings/pending/rules.json`
 - 相关 `MEMORY.md`
 - 今天对应的 `memory/YYYY-MM-DD.md`

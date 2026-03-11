@@ -9,6 +9,18 @@
 
 前者可信度高，可沿既有通道直接记录。后者必须先经过 pending 缓冲与 review 审核，不能直接污染核心规则。
 
+## 固定对象名称
+
+以下名称是这套机制中的固定运行名，不要自行发明别名：
+
+- 候选规则队列文件：`.learnings/pending/rules.json`
+- 信息源清单文件：`.learnings/pending/info-sources.json`
+- 候选规则归档目录：`.learnings/pending/archive/`
+- 信息流更新 cron：`daily-info-update`
+- 每日回顾 cron：`daily-review`
+- 运行层主文档：`AGENTS.md`
+- 运行层备份文件模式：`AGENTS.backup-YYYYMMDD-HHMM.md`
+
 ## 文件结构
 
 ```text
@@ -48,14 +60,14 @@
 ### 定时学习通道
 
 适用场景：
-- `daily-info-update` 发现新规则候选
-- `daily-review` 复盘时发现潜在规则
+- 名称为 `daily-info-update` 的 cron 任务发现新规则候选
+- 名称为 `daily-review` 的 cron 任务复盘时发现潜在规则
 - `ERRORS.md` 中同类错误累计达到阈值后提炼出的规则
 
 硬规则：
 - 不得直接写入 `MEMORY.md` 或 `AGENTS.md`
-- 必须先写进 `pending/rules.json`
-- 只能由 `daily-review` 审核后决定是否晋升
+- 必须先写进 `.learnings/pending/rules.json`
+- 只能由名称为 `daily-review` 的 cron 任务审核后决定是否晋升
 
 ## rules.json 结构
 
@@ -88,12 +100,12 @@
 ## source 取值
 
 - `info_update`
-  - 来自每日信息流更新
+  - 来自名称为 `daily-info-update` 的 cron 任务
 - `review`
-  - 来自每日回顾中的直接复盘判断
+  - 来自名称为 `daily-review` 的 cron 任务中的直接复盘判断
   - 不是错误累计触发，而是复盘时直接发现的潜在规则
 - `error_pattern`
-  - 来自同类错误累计后的规则提炼
+  - 来自名称为 `daily-review` 的 cron 任务中，对同类错误累计后的规则提炼
 
 ## target_files 判断原则
 
@@ -116,9 +128,9 @@
 - `expired`
 
 规则：
-- `rules.json` 永远只保留 `pending`
+- `.learnings/pending/rules.json` 永远只保留 `pending`
 - 一旦某条规则变成 `integrated`、`rejected`、`expired`
-- 必须在同次 review 中立即移入 `archive/rules_YYYY-MM-DD.json`
+- 必须在同次 `daily-review` 执行中立即移入 `.learnings/pending/archive/rules_YYYY-MM-DD.json`
 - 不允许这些状态残留在 `rules.json`
 
 过期机制：
@@ -130,7 +142,7 @@ archive 清理：
 - archive 文件默认保留 30 天
 - 超过 30 天自动删除
 
-## daily-info-update
+## `daily-info-update`
 
 推荐调度：
 - 每天 22:00
@@ -138,7 +150,7 @@ archive 清理：
 - 隔离会话执行
 
 职责：
-1. 读取 `pending/info-sources.json`
+1. 读取 `.learnings/pending/info-sources.json`
 2. 只处理 `enabled=true` 的信息源
 3. 检查今日新内容
 4. 只把高相关、能改变行为、目标文件明确的内容写成 pending 规则
@@ -153,7 +165,7 @@ archive 清理：
 
 只要有一项不明确，就丢弃。
 
-## daily-review
+## `daily-review`
 
 推荐调度：
 - 每天 23:00
@@ -163,7 +175,7 @@ archive 清理：
 四个阶段：
 
 ### 阶段一：清理
-- 读取 `rules.json`
+- 读取 `.learnings/pending/rules.json`
 - 把非 pending 条目移入 archive
 - 把超过 7 天的 pending 标记为 expired 后移入 archive
 - 删除 archive 中超过 30 天的文件
@@ -193,11 +205,47 @@ archive 清理：
 - 信息流覆盖情况
 - 若有过期未审核规则，醒目标注
 
+## 建制后接管 `AGENTS.md`
+
+首次完成以下任一动作后，必须立即检查并更新当前 workspace 的 `AGENTS.md`：
+- 初始化最小目录骨架
+- 启用 `.learnings/pending/`
+- 启用自我进化机制
+- 从旧结构迁移到五层结构
+
+### 接管步骤
+
+1. 读取当前 `AGENTS.md`
+2. 判断它是否已经覆盖运行层最小规则
+3. 如果要修改，先创建备份文件 `AGENTS.backup-YYYYMMDD-HHMM.md`
+4. 再更新 `AGENTS.md`
+5. 更新完成后再次检查：仅依赖新的 `AGENTS.md`，后续会话是否仍能按新架构运行
+
+### 运行层最小规则
+
+更新后的 `AGENTS.md` 至少要接住：
+- 会话启动顺序
+- 最小检索顺序
+- 写入边界
+- 定时任务发现的候选规则先进 `.learnings/pending/rules.json`
+- `daily-review` 是候选规则晋升闸门
+- 关键改动前先给方案并等用户确认
+- 长任务主动汇报
+- 有 Git 就提交，无 Git 不阻塞
+
+### 更新原则
+
+- 先备份，再更新
+- 保留人格、协作习惯和安全边界
+- 不要把本 skill 的完整机制全文复制进 `AGENTS.md`
+- 只写运行时必需规则
+- 不要无备份直接覆盖旧文档
+
 ## 初始化建议
 
 首次接管 workspace 时，除创建目录骨架外，还应准备：
 
-### rules.json
+### `.learnings/pending/rules.json`
 
 ```json
 {
@@ -206,7 +254,7 @@ archive 清理：
 }
 ```
 
-### info-sources.json
+### `.learnings/pending/info-sources.json`
 
 ```json
 {
@@ -225,7 +273,7 @@ archive 清理：
 把定时任务发现的候选规则直接写进 `AGENTS.md` 或 `MEMORY.md`。
 
 修正：
-- 先写 `pending/rules.json`
+- 先写 `.learnings/pending/rules.json`
 - 只能由 `daily-review` 审核后再晋升
 
 ### 错误二
@@ -250,8 +298,9 @@ archive 清理：
 - 模糊内容直接丢弃
 
 ### 错误五
-只建了 cron，没有把机制写回 skill。
+建制完成后没有更新 `AGENTS.md`。
 
 修正：
-- 必须把 schema、状态机、职责边界和审核链路写入 skill 与 references
-- 否则新 agent 无法稳定复现
+- 建制后必须接管运行层
+- 先备份 `AGENTS.md`
+- 再把新架构运行规则写回主文档

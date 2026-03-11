@@ -90,9 +90,9 @@ workspace-architecture-patch: ./WORKSPACE-PATCH.md
 
 ### 3. 自我进化规则
 
-- 定时任务发现的候选规则必须先进入 `.learnings/pending/rules.json`
+- 名称为 `daily-info-update` 和 `daily-review` 的 cron 任务发现候选规则时，必须先进入 `.learnings/pending/rules.json`
 - `rules.json` 只保留 `pending`
-- 其他状态通过 daily-review 立即归档到 `.learnings/pending/archive/`
+- 其他状态通过名称为 `daily-review` 的 cron 任务立即归档到 `.learnings/pending/archive/`
 
 ### 4. 写入边界
 

@@ -1,11 +1,11 @@
 ---
 name: workspace-architecture
-description: Explain and apply a layered workspace architecture for AI agents. Use when an agent needs to understand how a workspace is organized, decide where files should live, determine retrieval order for complex tasks, initialize a new workspace safely, integrate workspace rules into existing agent docs, or operate the self-evolution loop built on .learnings/pending/rules.json, daily-info-update, and daily-review.
+description: Explain and apply a layered workspace architecture for AI agents. Use when an agent needs to understand how a workspace is organized, decide where files should live, determine retrieval order for complex tasks, initialize a new workspace safely, integrate new runtime rules into AGENTS.md after architecture setup, or operate the self-evolution loop built on .learnings/pending/rules.json and the cron jobs named daily-info-update and daily-review.
 ---
 
 # Workspace Architecture
 
-用这份技能来理解和执行一套面向智能体协作的 workspace 分层体系。
+用这份技能来理解、建立并运行一套面向智能体协作的 workspace 分层体系。
 
 ## 安装后使用
 
@@ -25,7 +25,8 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 需要创建规则补丁文件时，使用：
 - `python3 ~/.openclaw/skills/workspace-architecture/scripts/bootstrap.py patch <workspace-root>`
 
-执行时默认遵守以下硬规则：
+## 执行硬规则
+
 - 先确认当前 agent 的 workspace 根路径，再在该 workspace 内执行初始化、读取与写入
 - 首次接管一个 workspace 时，先检查最小目录骨架；缺失时优先使用 `bootstrap.py init` 创建最小可用结构
 - `HEARTBEAT.md` 按当前 agent 自己 workspace 根路径读取，不默认全体 agent 共用同一份
@@ -36,16 +37,10 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 - 用户当场纠正触发的实时学习可直接写既有学习与记忆通道
 - 定时任务自己发现的候选规则，必须先进入 `.learnings/pending/rules.json`，未经审核不得直接写入核心规则文件
 - 初始化时只创建最小骨架，不预填虚假内容，不批量空造无用文件
+- 首次建制完成后，必须检查并更新当前 workspace 的 `AGENTS.md`，让运行层接住新架构
+- 更新 `AGENTS.md` 前，必须先备份原文件，再修改；不要直接裸改旧文档
 
 如果技能规则与本地旧文档表述不一致，优先按本技能中的执行型规则处理，再回看本地文档补细节。
-
-这份技能不只负责“把内容放对地方”，还负责让 Agent 通过文件系统形成闭环：
-- 先回看旧错与旧经验
-- 再执行任务
-- 执行后写回学习池与记忆层
-- 通过 heartbeat 定期反思
-- 通过 pending 队列与定时 review 审核候选规则
-- 在用户同意前，不把外部新知识直接升级为核心规则
 
 ## 核心模型
 
@@ -122,6 +117,7 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 - `.learnings/ERRORS.md`
 - `.learnings/LEARNINGS.md`
 - `.learnings/pending/rules.json`
+- `.learnings/pending/info-sources.json`
 - `.learnings/pending/archive/`
 
 ## 首次接管 workspace 的初始化
@@ -162,6 +158,59 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 5. 已存在文件一律跳过，不覆盖、不清空、不改写
 6. 不要因为目录缺失就跳过记忆、学习或上下文沉淀
 
+## 建制后接管运行层
+
+建制完成不等于能稳定运行。首次完成以下任一动作后，必须立即检查并更新当前 workspace 的 `AGENTS.md`：
+- 初始化最小目录骨架
+- 启用 `.learnings/pending/`
+- 启用自我进化机制
+- 把 workspace 从旧结构迁移到五层结构
+
+### 第一步：读取当前 `AGENTS.md`
+
+重点检查它是否已经覆盖以下运行层最小规则：
+- 会话启动顺序
+- 最小检索顺序
+- 新的写入边界
+- `.learnings/pending/rules.json` 的运行规则
+- `daily-review` 作为候选规则晋升闸门
+
+### 第二步：先备份，再更新
+
+如果需要修改 `AGENTS.md`，必须先备份。
+
+固定备份命名：
+- `AGENTS.backup-YYYYMMDD-HHMM.md`
+
+执行规则：
+- 先读取原文件，确认哪些段落属于人格、协作习惯和安全边界
+- 先创建备份文件，再更新 `AGENTS.md`
+- 不要无备份直接覆盖旧文档
+- 不要删除与新架构无冲突的已有规则
+
+### 第三步：只接管运行层，不复制整份 skill
+
+更新 `AGENTS.md` 时，只保留运行时必需规则，不要把本 skill 的完整机制全文复制进去。
+
+`AGENTS.md` 应保留的运行层内容：
+- 会话启动顺序
+- 最小导航与检索顺序
+- 写入边界
+- 定时学习候选先进 `.learnings/pending/rules.json`
+- `daily-review` 是候选规则晋升闸门
+- 关键改动前先给方案并等用户确认
+- 长任务主动汇报
+- 有 Git 就提交，无 Git 不阻塞
+
+### 第四步：更新后验收
+
+更新完成后，必须反问自己：
+- 如果下一次会话不再触发本 skill，仅依赖新的 `AGENTS.md`，当前 agent 是否仍然能按新架构运行
+- 是否知道先读什么、写到哪里、什么时候进入 pending 队列
+- 是否知道定时任务产生的候选规则不能直接写入核心文件
+
+如果答案是否定的，说明运行层接管还没完成。
+
 ## 自我进化机制
 
 这套技能内建一条新的自我进化闭环，用来把“实时纠正”和“定时发现”分开治理。
@@ -189,8 +238,8 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 
 #### 通道二：定时学习
 适用场景：
-- 信息流更新发现的新规则候选
-- 每日 review 发现的潜在规则
+- 名称为 `daily-info-update` 的 cron 任务发现的新规则候选
+- 名称为 `daily-review` 的 cron 任务在复盘中发现的潜在规则
 - 高频错误模式提炼出的规则
 
 硬规则：
@@ -229,9 +278,9 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 ```
 
 字段含义：
-- `source=info_update`：来自每日信息流更新
-- `source=review`：来自每日回顾中的直接复盘判断
-- `source=error_pattern`：来自同类错误累计触发的规则提炼
+- `source=info_update`：来自名称为 `daily-info-update` 的 cron 任务
+- `source=review`：来自名称为 `daily-review` 的 cron 任务中的直接复盘判断
+- `source=error_pattern`：来自名称为 `daily-review` 的 cron 任务中，对同类错误累计后的规则提炼
 
 ### 规则生命周期
 
@@ -244,15 +293,19 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 执行硬规则：
 - `rules.json` 永远只保留 `pending`
 - 一旦变成 `integrated`、`rejected`、`expired`
-- 必须在同次 review 中立即移入 `.learnings/pending/archive/rules_YYYY-MM-DD.json`
+- 必须在名称为 `daily-review` 的同次执行中立即移入 `.learnings/pending/archive/rules_YYYY-MM-DD.json`
 - `pending` 超过 7 天仍未审核，自动标记为 `expired` 并归档
 - archive 默认保留 30 天，超过 30 天自动删除
 
 ### 两个定时任务
 
-#### daily-info-update
+以下名称是固定运行名，不要自行发明别名：
+- `daily-info-update`
+- `daily-review`
+
+#### `daily-info-update`
 职责：
-- 扫描信息源清单
+- 读取 `.learnings/pending/info-sources.json`
 - 只提炼与当前职责直接相关、能改变行为、目标文件明确的候选规则
 - 每天最多新增 3 条 pending 规则
 - 模糊内容直接丢弃
@@ -263,7 +316,7 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 - `status` 固定为 `pending`
 - 完成后写当天 daily memory 摘要
 
-#### daily-review
+#### `daily-review`
 职责分四段：
 1. 清理与归档
 2. 回顾遗漏错误并补录
@@ -271,7 +324,7 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 4. 生成每日进化摘要
 
 额外硬规则：
-- review 中直接发现的新候选规则，`source` 必须设为 `review`
+- 直接复盘发现的新候选规则，`source` 必须设为 `review`
 - 同类错误累计达到 3 次以上提炼出的规则，`source` 必须设为 `error_pattern`
 - `error_pattern` 规则一旦采纳，除写入目标文件外，还要在 `.learnings/LEARNINGS.md` 记录“从错误链路提炼成规则”的来源
 
@@ -321,8 +374,6 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 5. 详细正文文件
 6. 外部资料
 
-如果要理解资料区布局，优先读 `reviews/CONTEXT-INDEX.md`。
-
 ## 先读旧错和旧经验
 
 当任务属于高重复、易出错或曾被用户纠正过的领域时，在正式执行前先检查相关学习记录。
@@ -330,7 +381,6 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 优先回看：
 - `.learnings/ERRORS.md`
 - `.learnings/LEARNINGS.md`
-- `.learnings/PROMOTION_QUEUE.md`
 - `.learnings/pending/rules.json`
 - 相关 `MEMORY.md`
 - 相关 `memory/` 记录
@@ -343,6 +393,7 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 - 文档结构调整
 - 高频被纠正的问题域
 - 自我进化架构维护
+- `daily-info-update` 与 `daily-review` 的配置维护
 
 如果用户正在纠正你，不要只当场修一句。先判断是否存在相关旧错，必要时立即回看再回答。
 
@@ -357,7 +408,7 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 - 这次有没有应该进入 pending 规则队列的候选 → `.learnings/pending/rules.json`
 
 目标不是“有文件就行”，而是形成：
-读取旧经验 → 执行任务 → 写回新经验 → review 审核 → 下次再先读 的闭环。
+读取旧经验 → 执行任务 → 写回新经验 → `daily-review` 审核 → 下次再先读 的闭环。
 
 ## heartbeat 反思机制
 
@@ -366,7 +417,6 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 在多智能体场景下，heartbeat 读取的是当前 agent 自己 workspace 根里的 `HEARTBEAT.md`。不要把某个 agent 的 heartbeat 文件误当成其他 agent 的主文件。
 
 heartbeat 反思的最小可跑通闭环只保留四项核心检查：
-
 1. 今天是否有新的错误或被纠正
 2. 是否需要写入 `.learnings/`
 3. 是否需要提炼进 `MEMORY.md`
@@ -376,16 +426,6 @@ heartbeat 反思的最小可跑通闭环只保留四项核心检查：
 - `pending/rules.json` 是否结构合法
 - 是否存在积压过久的 pending 规则
 - 当天 daily memory 是否已记录进化摘要
-
-设计 heartbeat 时，必须遵守以下原则：
-- 最小可跑通
-- 不要写复杂
-- 结构化
-- 清晰可执行
-- 给后续扩展留空间
-
-如果没有值得提醒的新情况，可以保持安静。
-如果发现重复错误或高价值经验，优先补学习池，而不是只留在对话里。
 
 ## 外部主动学习
 
@@ -424,6 +464,7 @@ heartbeat 反思的最小可跑通闭环只保留四项核心检查：
 - 不要把无 Git 环境误判成任务阻塞
 - 不要把某个 agent 的 `HEARTBEAT.md` 误当成所有 agent 共用的主文件
 - 不要在未确认 workspace 根路径前就乱建目录或文件
+- 不要在未备份旧文档前直接覆盖 `AGENTS.md`
 - 不要用批量空文件伪装成“已经完成初始化”
 
 ## 典型场景
@@ -449,8 +490,10 @@ heartbeat 反思的最小可跑通闭环只保留四项核心检查：
 2. 检查 `memory/`、`.learnings/`、`.learnings/pending/`、`context/`、`shared-context/`、`reviews/` 是否存在
 3. 缺失时主动创建最小可用目录骨架
 4. 初始化 `rules.json` 与 `info-sources.json`
-5. 不要预填虚假内容，不要批量创建无意义空文件
-6. 再开始后续的记忆、学习、上下文落盘工作
+5. 检查并更新 `AGENTS.md`
+6. 更新前先创建 `AGENTS.backup-YYYYMMDD-HHMM.md`
+7. 不要预填虚假内容，不要批量创建无意义空文件
+8. 再开始后续的记忆、学习、上下文落盘工作
 
 ### 场景七：heartbeat 期间的自我反思
 检查今天的错误、纠正、可晋升经验和需要归档的资料，而不是只做表面心跳响应。
@@ -459,7 +502,7 @@ heartbeat 反思的最小可跑通闭环只保留四项核心检查：
 先做候选摘要并向用户确认，同意后再吸收落盘。
 
 ### 场景九：维护自我进化规则队列
-优先读取 `./references/self-evolution.md`，检查 schema、状态机、清理规则和两个 cron 的职责边界；修改定时任务时，优先只改文案，不轻易改整体机制与调度。
+优先读取 `./references/self-evolution.md`，检查 schema、状态机、清理规则和 `daily-info-update`、`daily-review` 的职责边界；修改定时任务时，优先只改文案，不轻易改整体机制与调度。
 
 ## 工作方法
 
@@ -469,52 +512,25 @@ heartbeat 反思的最小可跑通闭环只保留四项核心检查：
 4. 遇到高频问题域时，先回看相关 `.learnings/`、pending 队列和历史记录
 5. 命中文件夹后，优先读 `.abstract.md` 和 `.overview.md`
 6. 执行后补写错误、经验、资料或长期记忆
-7. 借助 heartbeat 和 daily-review 定期做自我反思与提炼
+7. 借助 heartbeat 和 `daily-review` 定期做自我反思与提炼
 8. 如果要引入外部新知识，先征得用户同意
 9. 如果要修改体系说明，优先保持与既有五层模型一致
 
 ## 当前最小闭环状态
 
 当前这套体系已经跑通的最小闭环包括：
-
 1. 记录错误
 2. 记录经验
 3. 在相关任务前回读旧错与旧经验
 4. 在 heartbeat 中做最小反思检查
 5. 对外部主动学习设置用户确认阀门
 6. 用 pending 队列隔离定时任务发现的规则候选
-7. 用 daily-review 审核候选规则并决定是否晋升
-
-这意味着系统已经从“有文件可存”进入到“能形成基本反馈回路”的状态。
-
-## 当前不包含的内容
-
-以下内容不属于当前最小闭环范围，应作为后续扩展，而不是现在写进 heartbeat 主干：
-
-- 午饭提醒
-- 天气提醒
-- 通知提醒
-- 待办提醒
-- 复杂时间调度规则
-- 更细的 heartbeat 分支控制
-- 自动化外部学习队列
-- 针对专项问题域的独立反思技能
-
-## 本轮实战修订要点
-
-这份技能已根据真实运行问题进行修订，当前特别强调：
-- heartbeat 读取的是当前 agent 自己 workspace 根里的 `HEARTBEAT.md`
-- daily memory 必须使用显式日期文件规则
-- 无 Git 时不应把 commit 当阻塞
-- 首次接管 workspace 时应主动创建最小目录骨架
-- 定时学习产生的规则候选必须先进入 `.learnings/pending/rules.json`
-- `rules.json` 只保留 pending，其他状态立即归档
-- `daily-info-update` 与 `daily-review` 共同构成自我进化闭环
-- heartbeat 无异常回复统一为 `HEARTBEAT_OK`
+7. 用 `daily-review` 审核候选规则并决定是否晋升
+8. 建制后把运行层规则写回 `AGENTS.md`
 
 ## 需要更细 guidance 时
 
 按需读取：
 - `./references/model-and-boundaries.md`：五层模型、边界和常见误区
 - `./references/scenarios-and-retrieval.md`：检索顺序、错误回读、heartbeat 反思、落盘场景和外部学习规则
-- `./references/self-evolution.md`：pending 规则 schema、状态机、两个 cron 的职责与审核链路
+- `./references/self-evolution.md`：pending 规则 schema、状态机、`daily-info-update`、`daily-review` 与运行层接管规则
