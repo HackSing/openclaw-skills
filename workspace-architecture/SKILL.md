@@ -180,10 +180,13 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 
 检查原则：
 - 先检查 OpenClaw 的 cron 任务是否存在
+- 判断标准不是“有没有同名任务”，而是“有没有绑定到当前智能体自己的同名任务”
 - 不存在则通过 `openclaw cron` 创建
 - 已存在则核对调度、时区、会话目标、delivery、agent 与消息内容是否符合约定
 - `agent` 必须显式绑定到当前智能体自己，不能绑定到其他智能体
 - 每个智能体维护自己的一对任务，即使任务名相同，也必须以当前智能体自己的 agent id 运行
+- 如果发现同名任务属于其他智能体，应视为当前智能体自己的任务不存在，并直接为当前智能体新建一对任务
+- 不要修改、改绑或接管属于其他智能体的同名任务
 - 如果只有文案不完整，优先修正文案，不轻易改动整体机制
 - 不要重复创建属于当前智能体自己的同名任务
 
@@ -240,6 +243,7 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 - OpenClaw 的 `daily-info-update` 已存在且配置正确
 - OpenClaw 的 `daily-review` 已存在且配置正确
 - 这两个任务的 `agent` 都绑定到当前智能体自己
+- 没有通过修改或改绑其他智能体的同名任务来冒充完成建制
 - `AGENTS.md` 已接住运行层最小规则
 - 如果下一次会话不再触发本 skill，仅依赖新的 `AGENTS.md`，当前 agent 仍然能按新架构运行
 
