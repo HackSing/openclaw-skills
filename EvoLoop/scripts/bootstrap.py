@@ -46,12 +46,16 @@ INIT_FILES = {
 
 AGENTS_MARKERS = [
     "SOUL.md",
-    "USER.md",
     "MEMORY.md",
     ".learnings/pending/rules.json",
     "daily-review",
     "daily-info-update",
-    "关键改动前先给方案",
+]
+
+AGENTS_HEADING_KEYWORDS = [
+    "检索顺序",
+    "写入边界",
+    "运行层",
 ]
 
 
@@ -103,6 +107,16 @@ def ensure_json_files(base: Path, version_date: str, dry_run: bool) -> list[str]
     return logs
 
 
+def _extract_headings(content: str) -> list[str]:
+    """提取 markdown heading 文本（去掉 # 前缀）。"""
+    headings: list[str] = []
+    for line in content.splitlines():
+        stripped = line.strip()
+        if stripped.startswith("#"):
+            headings.append(stripped.lstrip("# ").strip())
+    return headings
+
+
 def check_agents_status(base: Path) -> list[str]:
     logs: list[str] = []
     filename = "AGENTS.md"
@@ -112,13 +126,19 @@ def check_agents_status(base: Path) -> list[str]:
         return logs
 
     content = path.read_text(encoding="utf-8")
-    missing = [marker for marker in AGENTS_MARKERS if marker not in content]
-    if not missing:
+    headings = _extract_headings(content)
+    headings_text = " ".join(headings)
+
+    missing_markers = [m for m in AGENTS_MARKERS if m not in content]
+    missing_headings = [kw for kw in AGENTS_HEADING_KEYWORDS if kw not in headings_text]
+    all_missing = missing_markers + [f"heading:{kw}" for kw in missing_headings]
+
+    if not all_missing:
         logs.append(f"OK      file {filename} (运行层规则已接管)")
         return logs
 
     logs.append(f"WARN    file {filename} (运行层规则可能未完整接管)")
-    for marker in missing:
+    for marker in all_missing:
         logs.append(f"MISS    marker {marker}")
     return logs
 
@@ -193,6 +213,13 @@ def build_parser() -> argparse.ArgumentParser:
         "workspace", nargs="?", default=".", help="目标 workspace 根路径，默认当前目录。"
     )
 
+    extend_parser = subparsers.add_parser(
+        "extend", help="创建可选子目录（memory/tasks、memory/incidents 等）。"
+    )
+    extend_parser.add_argument(
+        "workspace", nargs="?", default=".", help="目标 workspace 根路径，默认当前目录。"
+    )
+
     return parser
 
 
@@ -202,11 +229,19 @@ def run_init(args: argparse.Namespace) -> int:
     print("INIT    EvoLoop")
     for line in ensure_dirs(base, MIN_DIRS, args.dry_run):
         print(line)
-    for line in ensure_dirs(base, OPTIONAL_DIRS, args.dry_run):
-        print(line)
     for line in ensure_json_files(base, args.date, args.dry_run):
         print(line)
     print("DONE init complete")
+    return 0
+
+
+def run_extend(args: argparse.Namespace) -> int:
+    base = resolve_workspace(args.workspace, dry_run=False)
+    print(f"WORKSPACE {base}")
+    print("EXTEND  optional dirs")
+    for line in ensure_dirs(base, OPTIONAL_DIRS, False):
+        print(line)
+    print("DONE extend complete")
     return 0
 
 
@@ -241,6 +276,8 @@ def main() -> int:
         return run_init(args)
     if args.command == "check":
         return run_check(args)
+    if args.command == "extend":
+        return run_extend(args)
 
     parser.error(f"未知命令: {args.command}")
     return 2

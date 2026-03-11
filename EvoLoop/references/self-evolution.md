@@ -180,6 +180,100 @@ archive 清理：
 - agent：当前智能体自己的 agent id，例如当前智能体是 `creator`，则 agent 必须是 `creator`
 - 作用：清理、补录、审核、归档和每日进化摘要，是候选规则的唯一晋升闸门
 
+### cron message 模板
+
+创建 cron 任务时，message 内容必须自包含——隔离会话中 Agent 可能无法访问 EvoLoop 技能文件。以下是两个任务的 message 参考模板，创建时将 `<workspace-root>` 替换为你的工作空间的实际路径。
+
+#### `daily-info-update` message 模板
+
+```text
+执行每日信息流更新。工作目录固定为 <workspace-root>。
+
+使用北京时间当前日期生成当天 daily memory 路径 memory/YYYY-MM-DD.md。
+
+读取 <workspace-root>/.learnings/pending/info-sources.json 作为信息源清单，只处理 enabled 为 true 的条目。如果 sources 为空或没有 enabled 为 true 的条目，直接结束任务，并在当天 daily memory 记录：22:00 信息流更新跳过，信息源为空。
+
+每个信息源条目包含一个 instructions 字段，描述如何获取该信息源的内容。按 instructions 指引执行获取，然后对获取到的内容进行筛选和规则提取。
+
+rules.json 顶层结构固定为：
+{
+  "version": "YYYY-MM-DD",
+  "rules": []
+}
+
+写入 <workspace-root>/.learnings/pending/rules.json 时，单条规则必须严格使用以下字段，不得缺字段、不得改字段名：
+{
+  "id": "pending_YYYYMMDD_001",
+  "source": "info_update",
+  "source_detail": "具体来源描述，写清哪个信息源、哪篇内容或哪条更新",
+  "created_at": "ISO 8601 带时区时间",
+  "content": "建议的规则内容，一句话描述在什么情况下应该怎么做",
+  "reason": "为什么建议新增这条规则",
+  "target_files": ["AGENTS.md"],
+  "status": "pending",
+  "reviewed_at": null,
+  "review_note": null
+}
+
+逐条检查今日新内容，必须同时满足以下四条才允许写入 rules.json：
+1. 与当前职责直接相关，能提升编程、代码审查、调试、文档或 agent 工作流质量，不是泛新闻、泛观点
+2. 对现有规则存在明确补充或冲突，能说清影响哪条现有规则；说不清则视为不明确
+3. 能写成一句可执行规则（当 X 时应做 Y / 不做 Z），抽象感想不入队
+4. 能明确判断 target_files 为 AGENTS.md 或 MEMORY.md 或两者
+
+四条全部满足才新增。source 固定 info_update，status 固定 pending。模糊直接丢弃。每日不超过 3 条。
+
+如果 rules.json 不存在则创建；结构不合法先修正再写入。写入后 rules.json 中所有条目 status 必须为 pending。
+
+完成后在当天 daily memory 记录：22:00 信息流更新完成，新增 N 条 pending 规则。
+```
+
+#### `daily-review` message 模板
+
+```text
+执行每日回顾。工作目录固定为 <workspace-root>。
+
+使用北京时间当前日期生成当天 daily memory 路径 memory/YYYY-MM-DD.md。
+
+rules.json 路径：<workspace-root>/.learnings/pending/rules.json
+rules.json 顶层结构固定为：
+{
+  "version": "YYYY-MM-DD",
+  "rules": []
+}
+单条规则字段：
+{
+  "id": "pending_YYYYMMDD_001",
+  "source": "info_update / review / error_pattern",
+  "source_detail": "具体来源描述",
+  "created_at": "ISO 8601 带时区时间",
+  "content": "建议的规则内容",
+  "reason": "为什么建议新增这条规则",
+  "target_files": ["AGENTS.md"],
+  "status": "pending / integrated / rejected / expired",
+  "reviewed_at": null,
+  "review_note": null
+}
+
+阶段一 清理：
+读取 rules.json。把所有非 pending 条目移入 <workspace-root>/.learnings/pending/archive/rules_YYYY-MM-DD.json。超过 7 天的 pending 标记 expired，填 reviewed_at 和 review_note，移入 archive。删除 archive 中超过 30 天的文件。阶段结束后 rules.json 只保留 pending。
+
+阶段二 错误回顾：
+读取当天 daily memory，回溯过去 24 小时对话与记录。重点扫描：用户重复换措辞、语气变化、任务中途放弃、输出被忽略。遗漏错误补录到 <workspace-root>/.learnings/ERRORS.md 和当天 daily memory，标注 review_discovered。ERRORS.md 中同类错误达 3 次以上，提炼为规则写入 rules.json，source 设 error_pattern，status 设 pending。复盘中直接发现的潜在规则（非错误累计触发），source 设 review，status 设 pending。
+
+阶段三 规则审核：
+逐条审核 rules.json 中 pending 条目。
+采纳：写入 target_files 对应文件；如果 source 为 error_pattern，还必须在 <workspace-root>/.learnings/LEARNINGS.md 追加提炼记录，说明来自哪些错误模式。标记 integrated，填 reviewed_at 和 review_note，立即归档。
+拒绝：标记 rejected，填 reviewed_at 和 review_note，立即归档。
+需修改：先改 content 或 target_files，再决定采纳或拒绝；不再是 pending 就立即归档。
+阶段结束后 rules.json 不允许 integrated、rejected、expired 残留。
+
+阶段四 每日进化摘要：
+写入当天 daily memory，包含：今日新增错误数（实时与补录分开）、pending 规则审核结果、新写入 MEMORY.md/AGENTS.md/LEARNINGS.md 条数、高频错误模式提醒、信息流覆盖情况。过期未审核规则醒目标注。
+
+硬规则：rules.json 永远只保留 pending。integrated/rejected/expired 一律归档，不残留。
+```
+
 ## `daily-info-update`
 
 推荐调度：
@@ -188,12 +282,11 @@ archive 清理：
 - 隔离会话执行
 
 职责：
-1. 读取 `.learnings/pending/info-sources.json`
-2. 只处理 `enabled=true` 的信息源
-3. 检查今日新内容
-4. 只把高相关、能改变行为、目标文件明确的内容写成 pending 规则
-5. 每日新增规则不超过 3 条
-6. 完成后在当天 daily memory 写摘要
+1. 读取 `.learnings/pending/info-sources.json`，只处理 `enabled=true` 的条目
+2. 按每个条目的 `instructions` 获取信息（可能是搜索、访问网页、调用其他技能等）
+3. 对获取到的内容进行筛选，只把高相关、能改变行为、目标文件明确的内容写成 pending 规则
+4. 每日新增规则不超过 3 条
+5. 完成后在当天 daily memory 写摘要
 
 写入标准：
 - 与当前职责直接相关
@@ -270,6 +363,11 @@ archive 清理：
 - 关键改动前先给方案并等用户确认
 - 长任务主动汇报
 - 有 Git 就提交，无 Git 不阻塞
+- daily memory 先读今天 `memory/YYYY-MM-DD.md` 再读昨天，不存在必须明确说明
+- 高频易错任务执行前先检查 `.learnings/ERRORS.md`、`LEARNINGS.md`、`pending/rules.json`
+- 任务结束后判断是否需要写回错误、经验、资料或候选规则
+- 不要把外部资料直接写进核心文件，先征得用户同意
+- 写入目标子目录不存在时先创建再写入
 
 ### 更新原则
 
@@ -298,6 +396,42 @@ archive 清理：
 {
   "version": "YYYY-MM-DD",
   "sources": []
+}
+```
+
+单条 source 条目结构：
+
+```json
+{
+  "name": "信息源名称",
+  "instructions": "用自然语言描述如何获取该信息源的内容",
+  "enabled": true,
+  "focus": "与当前职责相关的关注点描述",
+  "added_at": "ISO 8601 带时区时间"
+}
+```
+
+字段说明：
+- `name`：人类可读的信息源名称
+- `instructions`：获取指令，用自然语言描述如何获取内容（可以是联网搜索、访问特定网页、调用其他技能等）
+- `enabled`：是否启用，`daily-info-update` 只处理 `enabled=true` 的条目
+- `focus`：该信息源中需要重点关注的内容方向
+- `added_at`：添加时间
+
+示例：
+
+```json
+{
+  "version": "2026-03-11",
+  "sources": [
+    {
+      "name": "OpenClaw changelog",
+      "instructions": "访问 https://github.com/nichochar/openclaw/releases 页面，提取最近 3 天的 release notes",
+      "enabled": true,
+      "focus": "新版本中影响 skill 或 cron 行为的变更",
+      "added_at": "2026-03-11T20:00:00+08:00"
+    }
+  ]
 }
 ```
 
