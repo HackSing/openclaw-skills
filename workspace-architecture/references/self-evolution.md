@@ -152,6 +152,8 @@ archive 清理：
 - 先检查是否存在
 - 不存在则创建
 - 已存在则核对调度、时区、会话目标、delivery 与消息内容是否符合约定
+- 如果是 macOS 环境，允许这些任务以 launchd 形式存在，对应标签可为 `ai.openclaw.daily-info-update` 与 `ai.openclaw.daily-review`
+- 如果固定名称任务或对应 launchd 标签已经存在并在运行，不要重复创建
 - 如果只有文案不完整，优先修正文案，不轻易改动整体机制
 - 不要重复创建同名任务
 

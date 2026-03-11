@@ -33,7 +33,6 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 - daily memory 必须先读今天对应的 `memory/YYYY-MM-DD.md`，再读昨天对应的 `memory/YYYY-MM-DD.md`
 - 如果 today 或 yesterday 对应的 daily memory 文件不存在，必须明确说明不存在，不要假装已经读取
 - 有 Git 就提交；无 Git 时，不要把 commit 当阻塞
-- heartbeat 无异常统一回复 `HEARTBEAT_OK`
 - 用户当场纠正触发的实时学习可直接写既有学习与记忆通道
 - 定时任务自己发现的候选规则，必须先进入 `.learnings/pending/rules.json`，未经审核不得直接写入核心规则文件
 - 初始化时只创建最小骨架，不预填虚假内容，不批量空造无用文件
@@ -74,10 +73,7 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 - `TOOLS.md`
 - `NOTICE.md`
 
-注意：在多智能体场景下，`HEARTBEAT.md` 应按各自 workspace 理解。
-- `main` 读取 `main` 自己 workspace 根里的 `HEARTBEAT.md`
-- 其他 agent 读取各自 workspace 根里的 `HEARTBEAT.md`
-- 不要默认所有 agent 共用同一个 `HEARTBEAT.md`
+注意：`HEARTBEAT.md` 仍是当前 agent 自己 workspace 的运行文件，但本技能不再把 heartbeat 作为反思或进化主通道；这些任务统一交给 `daily-info-update` 与 `daily-review`。
 
 ### Knowledge
 存放长期记忆和结构化事件记录。
@@ -186,6 +182,8 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 - 先检查是否存在
 - 不存在则创建
 - 已存在则核对调度、时区、会话目标、delivery 与消息内容是否符合约定
+- 如果是 macOS 环境，允许这些任务以 launchd 形式存在，对应标签可为 `ai.openclaw.daily-info-update` 与 `ai.openclaw.daily-review`
+- 如果固定名称任务或对应 launchd 标签已经存在并在运行，不要重复创建
 - 如果只有文案不完整，优先修正文案，不轻易改动整体机制
 - 不要重复创建同名任务
 
@@ -441,22 +439,15 @@ description: Explain and apply a layered workspace architecture for AI agents. U
 目标不是“有文件就行”，而是形成：
 读取旧经验 → 执行任务 → 写回新经验 → `daily-review` 审核 → 下次再先读 的闭环。
 
-## heartbeat 反思机制
+## heartbeat 边界
 
-将 heartbeat 视为周期性自我维护入口，而不只是状态检查。
+本技能不再把 heartbeat 作为反思或进化主通道。
 
-在多智能体场景下，heartbeat 读取的是当前 agent 自己 workspace 根里的 `HEARTBEAT.md`。不要把某个 agent 的 heartbeat 文件误当成其他 agent 的主文件。
+反思、候选规则发现、审核、归档和每日进化摘要，统一由以下两个固定任务完成：
+- `daily-info-update`
+- `daily-review`
 
-heartbeat 反思的最小可跑通闭环只保留四项核心检查：
-1. 今天是否有新的错误或被纠正
-2. 是否需要写入 `.learnings/`
-3. 是否需要提炼进 `MEMORY.md`
-4. 是否存在需要用户确认的外部学习候选
-
-如果当前 workspace 已启用自我进化机制，还应额外检查：
-- `pending/rules.json` 是否结构合法
-- 是否存在积压过久的 pending 规则
-- 当天 daily memory 是否已记录进化摘要
+`HEARTBEAT.md` 如存在，仍按当前 agent 自己 workspace 根路径读取，但仅用于轻量运行规则，不承载这套自我进化闭环。
 
 ## 外部主动学习
 
@@ -494,6 +485,7 @@ heartbeat 反思的最小可跑通闭环只保留四项核心检查：
 - 不要未经用户同意就吸收外部新规则
 - 不要把无 Git 环境误判成任务阻塞
 - 不要把某个 agent 的 `HEARTBEAT.md` 误当成所有 agent 共用的主文件
+- 不要把 heartbeat 当成反思、审核或规则晋升的主通道
 - 不要在未确认 workspace 根路径前就乱建目录或文件
 - 不要在未备份旧文档前直接覆盖 `AGENTS.md`
 - 不要重复创建同名 cron 任务
@@ -527,8 +519,8 @@ heartbeat 反思的最小可跑通闭环只保留四项核心检查：
 7. 更新前先创建 `AGENTS.backup-YYYYMMDD-HHMM.md`
 8. 做建制验收
 
-### 场景七：heartbeat 期间的自我反思
-检查今天的错误、纠正、可晋升经验和需要归档的资料，而不是只做表面心跳响应。
+### 场景七：收到 heartbeat
+按当前 workspace 的 `HEARTBEAT.md` 执行轻量运行规则即可，不要在 heartbeat 中承担反思、审核或规则晋升；这些任务统一交给 `daily-info-update` 与 `daily-review`。
 
 ### 场景八：想从外部学习新方法
 先做候选摘要并向用户确认，同意后再吸收落盘。
@@ -544,7 +536,7 @@ heartbeat 反思的最小可跑通闭环只保留四项核心检查：
 4. 遇到高频问题域时，先回看相关 `.learnings/`、pending 队列和历史记录
 5. 命中文件夹后，优先读 `.abstract.md` 和 `.overview.md`
 6. 执行后补写错误、经验、资料或长期记忆
-7. 借助 heartbeat 和 `daily-review` 定期做自我反思与提炼
+7. 借助 `daily-info-update` 与 `daily-review` 定期做自我反思、审核与提炼
 8. 如果要引入外部新知识，先征得用户同意
 9. 如果要修改体系说明，优先保持与既有五层模型一致
 
@@ -554,7 +546,7 @@ heartbeat 反思的最小可跑通闭环只保留四项核心检查：
 1. 记录错误
 2. 记录经验
 3. 在相关任务前回读旧错与旧经验
-4. 在 heartbeat 中做最小反思检查
+4. 通过 `daily-review` 做最小反思检查
 5. 对外部主动学习设置用户确认阀门
 6. 用 pending 队列隔离定时任务发现的规则候选
 7. 用 `daily-review` 审核候选规则并决定是否晋升
@@ -565,5 +557,5 @@ heartbeat 反思的最小可跑通闭环只保留四项核心检查：
 
 按需读取：
 - `./references/model-and-boundaries.md`：五层模型、边界和常见误区
-- `./references/scenarios-and-retrieval.md`：检索顺序、错误回读、heartbeat 反思、落盘场景和外部学习规则
+- `./references/scenarios-and-retrieval.md`：检索顺序、错误回读、cron 维护、落盘场景和外部学习规则
 - `./references/self-evolution.md`：pending 规则 schema、状态机、`daily-info-update`、`daily-review`、运行层接管与建制验收规则

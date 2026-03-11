@@ -95,22 +95,12 @@
 1. 写入 `memory/decisions/`
 2. 必要时在项目目录保留项目级决策记录
 
-### heartbeat 自我反思
+### 收到 heartbeat
 处理方式：
 1. 先确认当前 agent 的 workspace 根路径
 2. 读取该 workspace 根里的 `HEARTBEAT.md`
-3. 检查今天是否有新的错误或被纠正
-4. 检查是否需要写入 `.learnings/`
-5. 检查是否需要提炼进 `MEMORY.md`
-6. 检查是否存在需要用户确认的外部学习候选
-7. 如果启用了 pending 队列，顺手检查 `rules.json` 是否结构合法、是否存在积压过久的 pending 项
-
-设计原则：
-- 最小可跑通
-- 不要写复杂
-- 结构化
-- 清晰可执行
-- 给后续扩展留空间
+3. 只执行轻量运行规则，不把 heartbeat 当成反思、审核或规则晋升通道
+4. 自我进化相关检查统一交给 `daily-info-update` 与 `daily-review`
 
 ### 主动外部学习
 处理方式：
@@ -129,10 +119,11 @@
 
 ### 调整 daily-info-update 或 daily-review
 处理方式：
-1. 先核对现有 cron 内容，不要直接执行 run
-2. 先判断是文案收口还是机制重构
-3. 如果只是 schema、source、生命周期歧义，优先只改 message 文案
-4. 改完后做只读复核，确认 schedule、sessionTarget、delivery 未被误改
+1. 先核对现有任务内容，不要直接执行 run
+2. 如果是 macOS 环境，也检查对应 launchd 标签 `ai.openclaw.daily-info-update` 与 `ai.openclaw.daily-review` 是否已存在并在运行
+3. 先判断是文案收口还是机制重构
+4. 如果只是 schema、source、生命周期歧义，优先只改 message 文案
+5. 改完后做只读复核，确认 schedule、sessionTarget、delivery 未被误改
 
 ## L0 / L1 / L2
 
